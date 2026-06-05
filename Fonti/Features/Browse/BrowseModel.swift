@@ -17,6 +17,6 @@ final class BrowseModel {
 
     func displayText(for family: FontFamily) -> String {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? family.displayName : input
+        return trimmed.isEmpty ? family.displayName : trimmed
     }
 }

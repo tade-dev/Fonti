@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct FullScreenPreviewView: View {
     let family: FontFamily
     let initialText: String
@@ -65,6 +66,7 @@ struct FullScreenPreviewView: View {
             }
             .buttonStyle(.glass)
             .tint(.fontiCream)
+            .accessibilityLabel("Share specimen image")
         } else {
             EmptyView()
         }
