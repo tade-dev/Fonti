@@ -6,6 +6,8 @@ struct FullScreenPreviewView: View {
 
     @State private var text: String
     @State private var size: CGFloat = 48
+    @State private var isBold: Bool = false
+    @State private var isItalic: Bool = false
 
     init(family: FontFamily, initialText: String) {
         self.family = family
@@ -17,14 +19,20 @@ struct FullScreenPreviewView: View {
         VStack {
             Spacer()
             Text(text)
-                .font(.custom(family.id, size: size))
+                .font(styledFont)
                 .foregroundStyle(Color.fontiCream)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
             Spacer()
-            controls
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+            PreviewControls(
+                family: family,
+                size: $size,
+                isBold: $isBold,
+                isItalic: $isItalic,
+                onShare: shareTapped
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
@@ -32,17 +40,15 @@ struct FullScreenPreviewView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var controls: some View {
-        VStack(spacing: 14) {
-            HStack {
-                Text("12").font(.caption).foregroundStyle(Color.fontiCream.opacity(0.6))
-                Slider(value: $size, in: 12...96)
-                    .tint(.fontiAmber)
-                Text("96").font(.caption).foregroundStyle(Color.fontiCream.opacity(0.6))
-            }
-        }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 22))
+    private var styledFont: Font {
+        var font = Font.custom(family.id, size: size)
+        if isBold { font = font.bold() }
+        if isItalic { font = font.italic() }
+        return font
+    }
+
+    private func shareTapped() {
+        // Wired in Task 11.
     }
 }
 
