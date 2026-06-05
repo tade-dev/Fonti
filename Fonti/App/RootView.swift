@@ -12,6 +12,7 @@ struct RootView: View {
         }
         .tint(.fontiAmber)
         .preferredColorScheme(.dark)
+        .tabBarMinimizeBehavior(.onScrollDown)
     }
 }
 
