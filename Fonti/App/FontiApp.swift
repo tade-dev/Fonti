@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct FontiApp: App {
@@ -6,5 +7,6 @@ struct FontiApp: App {
         WindowGroup {
             RootView()
         }
+        .modelContainer(for: SavedFont.self)
     }
 }

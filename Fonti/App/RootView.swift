@@ -2,8 +2,15 @@ import SwiftUI
 
 struct RootView: View {
     var body: some View {
-        Text("Hello, Fonti")
-            .padding()
+        TabView {
+            Tab("Browse", systemImage: "textformat") {
+                NavigationStack { BrowseView() }
+            }
+            Tab("Saved", systemImage: "heart") {
+                NavigationStack { SavedFontsView() }
+            }
+        }
+        .tint(.fontiAmber)
     }
 }
 
