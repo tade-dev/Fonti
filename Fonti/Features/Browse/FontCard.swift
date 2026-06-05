@@ -1,8 +1,23 @@
 import SwiftUI
+import SwiftData
 
 struct FontCard: View {
     let family: FontFamily
     let displayText: String
+
+    @Environment(\.modelContext) private var modelContext
+    @Query private var matches: [SavedFont]
+
+    init(family: FontFamily, displayText: String) {
+        self.family = family
+        self.displayText = displayText
+        let name = family.id
+        _matches = Query(
+            filter: #Predicate<SavedFont> { $0.familyName == name }
+        )
+    }
+
+    private var isSaved: Bool { !matches.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -18,14 +33,28 @@ struct FontCard: View {
                     .tracking(1.2)
                     .foregroundStyle(Color.fontiCream.opacity(0.65))
                 Spacer()
-                // Heart button placeholder — wired in Task 8.
-                Image(systemName: "heart")
-                    .foregroundStyle(Color.fontiCream.opacity(0.65))
+                Button(action: toggleSaved) {
+                    Image(systemName: isSaved ? "heart.fill" : "heart")
+                        .foregroundStyle(isSaved ? Color.fontiAmber : Color.fontiCream.opacity(0.65))
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel(isSaved ? "Remove from Saved" : "Save font")
             }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(in: .rect(cornerRadius: 22))
+    }
+
+    private func toggleSaved() {
+        withAnimation(.snappy(duration: 0.25)) {
+            if let existing = matches.first {
+                modelContext.delete(existing)
+            } else {
+                modelContext.insert(SavedFont(familyName: family.id))
+            }
+        }
     }
 }
 
@@ -38,4 +67,5 @@ struct FontCard: View {
         )
         .padding()
     }
+    .modelContainer(for: SavedFont.self, inMemory: true)
 }
