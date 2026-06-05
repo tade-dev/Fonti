@@ -17,6 +17,12 @@ struct BrowseView: View {
             .padding(.bottom, 24)
         }
         .background(Color.fontiInk.ignoresSafeArea())
+        .navigationDestination(for: FontFamily.self) { family in
+            FullScreenPreviewView(
+                family: family,
+                initialText: model.input
+            )
+        }
         .safeAreaInset(edge: .top) {
             inputBar
                 .padding(.horizontal, 16)
