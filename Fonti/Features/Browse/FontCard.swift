@@ -27,6 +27,9 @@ struct FontCard: View {
                     .foregroundStyle(Color.fontiCream)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .id(displayText)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.25), value: displayText)
 
                 HStack {
                     Text(family.displayName.uppercased())
@@ -51,6 +54,11 @@ struct FontCard: View {
             .glassEffect(in: .rect(cornerRadius: 22))
         }
         .buttonStyle(.plain)
+        .scrollTransition { content, phase in
+            content
+                .opacity(phase.isIdentity ? 1 : 0.35)
+                .scaleEffect(phase.isIdentity ? 1 : 0.96)
+        }
     }
 
     private func toggleSaved() {
