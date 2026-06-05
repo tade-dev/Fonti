@@ -11,6 +11,7 @@ struct RootView: View {
             }
         }
         .tint(.fontiAmber)
+        .preferredColorScheme(.dark)
     }
 }
 
