@@ -29,7 +29,7 @@ struct FullScreenPreviewView: View {
                 size: $size,
                 isBold: $isBold,
                 isItalic: $isItalic,
-                onShare: shareTapped
+                shareSlot: shareSlot
             )
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
@@ -47,8 +47,27 @@ struct FullScreenPreviewView: View {
         return font
     }
 
-    private func shareTapped() {
-        // Wired in Task 11.
+    @ViewBuilder
+    private var shareSlot: some View {
+        if let image = SpecimenRenderer.render(
+            family: family.id,
+            text: text,
+            size: size,
+            bold: isBold,
+            italic: isItalic
+        ) {
+            ShareLink(
+                item: Image(uiImage: image),
+                preview: SharePreview("Fonti — \(family.displayName)", image: Image(uiImage: image))
+            ) {
+                Image(systemName: "square.and.arrow.up")
+                    .padding(.horizontal, 6)
+            }
+            .buttonStyle(.glass)
+            .tint(.fontiCream)
+        } else {
+            EmptyView()
+        }
     }
 }
 

@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct PreviewControls: View {
+struct PreviewControls<Share: View>: View {
     let family: FontFamily
     @Binding var size: CGFloat
     @Binding var isBold: Bool
     @Binding var isItalic: Bool
-    let onShare: () -> Void
+    let shareSlot: Share
 
     private var supportsBold: Bool { FontTraitSupport.supportsBold(family: family.id) }
     private var supportsItalic: Bool { FontTraitSupport.supportsItalic(family: family.id) }
@@ -25,14 +25,7 @@ struct PreviewControls: View {
                 toggle("I", isOn: $isItalic, enabled: supportsItalic)
                     .font(.system(size: 16).italic())
                 Spacer()
-                Button(action: onShare) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                        .labelStyle(.iconOnly)
-                        .padding(.horizontal, 6)
-                }
-                .buttonStyle(.glass)
-                .tint(.fontiCream)
-                .accessibilityLabel("Share specimen")
+                shareSlot
             }
         }
         .padding(16)
