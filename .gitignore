@@ -1,0 +1,25 @@
+# Brainstorm sessions (visual companion mockups)
+.superpowers/
+
+# macOS
+.DS_Store
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcuserstatedata
+
+# Xcode build output
+build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# Generated/local artefacts
+generated-images/
