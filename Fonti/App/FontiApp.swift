@@ -1,17 +1,12 @@
-//
-//  FontiApp.swift
-//  Fonti
-//
-//  Created by BSTAR on 05/06/2026.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct FontiApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
+        .modelContainer(for: SavedFont.self)
     }
 }
