@@ -143,4 +143,4 @@ Pick the **iPhone 17 (iOS 26.2)** simulator and ⌘R.
 
 ## Credits
 
-Designed and built in 2026 by **Akintade Oluwaseun**. App icon glyph is the letter F set in Apple's New York serif on the brand ink (#0D0D0D) — generator script lives at [`scripts/generate-app-icon.py`](scripts/generate-app-icon.py).
+Designed and built in 2026 by **Akintade Oluwaseun**. App icon is an *Aa* type specimen set in Apple's New York serif — cream A + amber a, with a small *F O N T I* wordmark in caps below, on the brand ink (#0D0D0D).
