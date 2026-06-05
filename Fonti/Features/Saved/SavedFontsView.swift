@@ -25,6 +25,7 @@ struct SavedFontsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
         .navigationTitle("Saved")
+        .toolbarTitleDisplayMode(.inlineLarge)
         .navigationDestination(item: $selectedFamily) { family in
             FullScreenPreviewView(family: family, initialText: "")
                 .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))

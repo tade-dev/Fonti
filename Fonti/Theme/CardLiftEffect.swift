@@ -14,11 +14,6 @@ struct CardLiftEffect: ViewModifier {
             .scaleEffect(scale)
             .opacity(isDimmed ? 0.35 : 1)
             .blur(radius: isDimmed ? 6 : 0)
-            .shadow(
-                color: .fontiAmber.opacity(isLifted ? 0.10 : 0),
-                radius: isLifted ? 24 : 0,
-                y: isLifted ? 6 : 0
-            )
             .animation(.spring(response: 0.35, dampingFraction: 0.72), value: isLifted)
             .animation(.easeOut(duration: 0.22), value: isDimmed)
     }

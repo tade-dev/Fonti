@@ -39,6 +39,16 @@ struct FullScreenPreviewView: View {
         .background(Color.fontiInk.ignoresSafeArea())
         .navigationTitle(family.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(family.displayName)
+                    .font(.custom(family.id, size: 17))
+                    .foregroundStyle(Color.fontiCream)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .accessibilityHidden(true) // navigationTitle already announces this
+            }
+        }
     }
 
     private var styledFont: Font {
