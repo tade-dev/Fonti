@@ -17,7 +17,7 @@ private struct SpecimenView: View {
 
     var body: some View {
         ZStack {
-            Color.brandInk
+            Color.fontiInk
 
             // FONTI wordmark, top-left
             VStack {
@@ -25,7 +25,7 @@ private struct SpecimenView: View {
                     Text("FONTI")
                         .font(.system(size: 14, weight: .semibold))
                         .tracking(3)
-                        .foregroundStyle(Color.brandCream.opacity(0.3))
+                        .foregroundStyle(Color.fontiCream.opacity(0.3))
                     Spacer()
                 }
                 Spacer()
@@ -35,7 +35,7 @@ private struct SpecimenView: View {
             // User text, centred
             Text(text.isEmpty ? family : text)
                 .font(font)
-                .foregroundStyle(Color.brandCream)
+                .foregroundStyle(Color.fontiCream)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 80)
 
@@ -45,7 +45,7 @@ private struct SpecimenView: View {
                 Text(family.uppercased())
                     .font(.system(size: 18, weight: .medium))
                     .tracking(2)
-                    .foregroundStyle(Color.brandCream.opacity(0.7))
+                    .foregroundStyle(Color.fontiCream.opacity(0.7))
             }
             .padding(.bottom, 48)
         }

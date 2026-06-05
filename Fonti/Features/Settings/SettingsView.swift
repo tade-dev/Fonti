@@ -5,7 +5,10 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var saved: [SavedFont]
 
-    @AppStorage("fonti.appearance")         private var appearance: AppAppearance = .dark
+    // Appearance is disabled — Fonti is dark-only for v1. See RootView for the matching
+    // .preferredColorScheme(.dark) hardcode. Re-enable here + in RootView + uncomment
+    // appearanceSection below to bring back theme switching.
+    // @AppStorage("fonti.appearance")         private var appearance: AppAppearance = .dark
     @AppStorage("fonti.defaultSampleText")  private var defaultSampleText: String = ""
     @AppStorage("fonti.defaultPreviewSize") private var defaultPreviewSize: Double = 48
     @AppStorage("fonti.hapticsEnabled")     private var hapticsEnabled: Bool = true
@@ -16,7 +19,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            appearanceSection
+            // appearanceSection — disabled; Fonti is dark-only for v1.
             defaultsSection
             feedbackSection
             librarySection
@@ -40,6 +43,9 @@ struct SettingsView: View {
         }
     }
 
+    // Disabled — Fonti is dark-only for v1. Restore by uncommenting the AppStorage
+    // binding above and adding `appearanceSection` back to the Form.
+    /*
     private var appearanceSection: some View {
         Section("Appearance") {
             Picker("Theme", selection: $appearance) {
@@ -50,6 +56,7 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
         }
     }
+    */
 
     private var defaultsSection: some View {
         Section {

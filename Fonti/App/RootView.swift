@@ -2,7 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct RootView: View {
-    @AppStorage("fonti.appearance") private var appearance: AppAppearance = .dark
+    // Light/System modes are intentionally disabled — Fonti is dark-only for v1.
+    // Re-enable by uncommenting the AppStorage above and reading appearance.colorScheme
+    // below, and unhiding the Appearance section in SettingsView.
+    // @AppStorage("fonti.appearance") private var appearance: AppAppearance = .dark
 
     var body: some View {
         TabView {
@@ -17,7 +20,7 @@ struct RootView: View {
             }
         }
         .tint(.fontiAmber)
-        .preferredColorScheme(appearance.colorScheme)
+        .preferredColorScheme(.dark)
         .tabBarMinimizeBehavior(.onScrollDown)
     }
 }
