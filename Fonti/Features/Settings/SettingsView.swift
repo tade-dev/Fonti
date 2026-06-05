@@ -31,11 +31,7 @@ struct SettingsView: View {
         .tint(.fontiAmber)
         .navigationTitle("Settings")
         .toolbarTitleDisplayMode(.inlineLarge)
-        .confirmationDialog(
-            "Clear all saved fonts?",
-            isPresented: $confirmClear,
-            titleVisibility: .visible
-        ) {
+        .alert("Clear all saved fonts?", isPresented: $confirmClear) {
             Button("Clear", role: .destructive) { clearSaved() }
             Button("Cancel", role: .cancel) {}
         } message: {
