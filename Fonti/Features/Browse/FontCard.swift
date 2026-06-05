@@ -11,6 +11,7 @@ struct FontCard: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query private var matches: [SavedFont]
+    @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
 
     init(
         family: FontFamily,
@@ -71,6 +72,9 @@ struct FontCard: View {
             content
                 .opacity(phase.isIdentity ? 1 : 0.35)
                 .scaleEffect(phase.isIdentity ? 1 : 0.96)
+        }
+        .sensoryFeedback(trigger: isSaved) { _, _ in
+            hapticsEnabled ? .selection : nil
         }
     }
 

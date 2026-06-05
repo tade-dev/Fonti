@@ -7,13 +7,16 @@ struct BrowseView: View {
     @State private var selectedFamily: FontFamily?
     @Namespace private var cardNamespace
 
+    @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
+    @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
+
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
                 ForEach(model.fonts) { family in
                     FontCard(
                         family: family,
-                        displayText: model.displayText(for: family),
+                        displayText: model.displayText(for: family, fallback: defaultSampleText),
                         isLifted: liftedFamilyId == family.id,
                         isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
                         namespace: cardNamespace,
@@ -38,6 +41,9 @@ struct BrowseView: View {
                     liftedFamilyId = nil
                 }
             }
+        }
+        .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
+            (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
         }
         .safeAreaInset(edge: .top) {
             inputBar

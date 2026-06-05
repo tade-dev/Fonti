@@ -6,7 +6,7 @@ struct FullScreenPreviewView: View {
     let initialText: String
 
     @State private var text: String
-    @State private var size: CGFloat = 48
+    @State private var size: CGFloat
     @State private var isBold: Bool = false
     @State private var isItalic: Bool = false
 
@@ -14,6 +14,8 @@ struct FullScreenPreviewView: View {
         self.family = family
         self.initialText = initialText
         _text = State(initialValue: initialText.isEmpty ? family.displayName : initialText)
+        let stored = UserDefaults.standard.double(forKey: "fonti.defaultPreviewSize")
+        _size = State(initialValue: stored == 0 ? 48 : CGFloat(stored))
     }
 
     var body: some View {

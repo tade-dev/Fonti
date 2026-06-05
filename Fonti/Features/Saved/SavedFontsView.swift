@@ -9,6 +9,8 @@ struct SavedFontsView: View {
     @State private var selectedFamily: FontFamily?
     @Namespace private var cardNamespace
 
+    @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
+
     private let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
@@ -36,6 +38,9 @@ struct SavedFontsView: View {
                     liftedFamilyId = nil
                 }
             }
+        }
+        .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
+            (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
         }
     }
 
