@@ -2,6 +2,9 @@ import SwiftUI
 
 struct SavedFontCard: View {
     let family: FontFamily
+    let isLifted: Bool
+    let isDimmed: Bool
+    let namespace: Namespace.ID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -26,13 +29,21 @@ struct SavedFontCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
         .glassEffect(in: .rect(cornerRadius: 22))
+        .matchedTransitionSource(id: family.id, in: namespace)
+        .cardLift(isLifted: isLifted, isDimmed: isDimmed)
     }
 }
 
 #Preview {
+    @Previewable @Namespace var ns
     ZStack {
         Color.fontiInk.ignoresSafeArea()
-        SavedFontCard(family: FontFamily(id: "Georgia", displayName: "Georgia"))
-            .padding()
+        SavedFontCard(
+            family: FontFamily(id: "Georgia", displayName: "Georgia"),
+            isLifted: false,
+            isDimmed: false,
+            namespace: ns
+        )
+        .padding()
     }
 }

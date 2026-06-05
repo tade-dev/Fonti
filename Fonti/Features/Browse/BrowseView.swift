@@ -1,7 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct BrowseView: View {
     @State private var model = BrowseModel()
+    @State private var liftedFamilyId: String?
+    @State private var selectedFamily: FontFamily?
+    @Namespace private var cardNamespace
 
     var body: some View {
         ScrollView {
@@ -9,7 +13,11 @@ struct BrowseView: View {
                 ForEach(model.fonts) { family in
                     FontCard(
                         family: family,
-                        displayText: model.displayText(for: family)
+                        displayText: model.displayText(for: family),
+                        isLifted: liftedFamilyId == family.id,
+                        isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
+                        namespace: cardNamespace,
+                        onTap: { tapped(family) }
                     )
                 }
             }
@@ -17,11 +25,19 @@ struct BrowseView: View {
             .padding(.bottom, 24)
         }
         .background(Color.fontiInk.ignoresSafeArea())
-        .navigationDestination(for: FontFamily.self) { family in
+        .navigationDestination(item: $selectedFamily) { family in
             FullScreenPreviewView(
                 family: family,
                 initialText: model.input
             )
+            .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
+        }
+        .onChange(of: selectedFamily) { _, newValue in
+            if newValue == nil {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    liftedFamilyId = nil
+                }
+            }
         }
         .safeAreaInset(edge: .top) {
             inputBar
@@ -53,8 +69,19 @@ struct BrowseView: View {
                 }
             }
     }
+
+    private func tapped(_ family: FontFamily) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
+            liftedFamilyId = family.id
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            selectedFamily = family
+        }
+    }
 }
 
 #Preview {
     NavigationStack { BrowseView() }
+        .modelContainer(for: SavedFont.self, inMemory: true)
 }
