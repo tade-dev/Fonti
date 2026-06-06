@@ -27,7 +27,9 @@ struct BrowseView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .scrollDismissesKeyboard(.immediately)
         .background(Color.fontiInk.ignoresSafeArea())
+        .dismissKeyboardOnBackgroundTap()
         .navigationDestination(item: $selectedFamily) { family in
             FullScreenPreviewView(
                 family: family,

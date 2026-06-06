@@ -26,7 +26,9 @@ struct SettingsView: View {
             aboutSection
         }
         .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.immediately)
         .background(Color.fontiInk.ignoresSafeArea())
+        .dismissKeyboardOnBackgroundTap()
         .foregroundStyle(Color.fontiCream)
         .tint(.fontiAmber)
         .navigationTitle("Settings")
