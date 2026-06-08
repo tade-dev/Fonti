@@ -15,6 +15,13 @@ Liquid Glass throughout. SwiftData-backed. No third-party dependencies.
 
 ---
 
+## What's new in v1.1
+
+- **Font Pairings** — A curated map of designer-approved heading + body combinations. Open the Full Screen Preview of a pairable family (Georgia, Helvetica Neue, Bodoni 72, Baskerville, Avenir Next, more) and you'll see a "Pairs well with…" strip of glass chips below the controls, each rendered in its own font. Tapping a chip *morphs* it into the new Preview via the same zoom transition Apple uses in Photos.
+- **Custom Font Import** — A new **My Fonts** section in Settings opens the Files picker for `.ttf` or `.otf` files. Imported fonts are copied into the sandbox, registered with Core Text, and surfaced in Browse alongside the system fonts (with a small amber dot beside the caps label so designers can tell them apart). Swipe-to-delete in Settings removes them cleanly.
+
+---
+
 ## Screens
 
 <table>
