@@ -46,7 +46,13 @@ struct FontCard: View {
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.25), value: displayText)
 
-            HStack {
+            HStack(spacing: 6) {
+                if family.isImported {
+                    Circle()
+                        .fill(Color.fontiAmber)
+                        .frame(width: 6, height: 6)
+                        .accessibilityLabel("Imported font")
+                }
                 Text(family.displayName.uppercased())
                     .font(.caption2)
                     .tracking(1.2)

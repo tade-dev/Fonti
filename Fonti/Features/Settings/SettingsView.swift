@@ -1,9 +1,11 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var saved: [SavedFont]
+    @Query(sort: \ImportedFont.familyName) private var imports: [ImportedFont]
 
     // Appearance is disabled — Fonti is dark-only for v1. See RootView for the matching
     // .preferredColorScheme(.dark) hardcode. Re-enable here + in RootView + uncomment
@@ -14,16 +16,34 @@ struct SettingsView: View {
     @AppStorage("fonti.hapticsEnabled")     private var hapticsEnabled: Bool = true
 
     @State private var confirmClear = false
+    @State private var showingImporter = false
+    @State private var importError: String?
 
     private let githubURL = URL(string: "https://github.com/tade-dev/Fonti")!
 
     var body: some View {
         Form {
             // appearanceSection — disabled; Fonti is dark-only for v1.
+            myFontsSection
             defaultsSection
             feedbackSection
             librarySection
             aboutSection
+        }
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.font, UTType("public.truetype-font") ?? .font, UTType("public.opentype-font") ?? .font],
+            allowsMultipleSelection: true
+        ) { result in
+            handleImport(result)
+        }
+        .alert("Import failed", isPresented: Binding(
+            get: { importError != nil },
+            set: { if !$0 { importError = nil } }
+        ), presenting: importError) { _ in
+            Button("OK") { importError = nil }
+        } message: { message in
+            Text(message)
         }
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
@@ -55,6 +75,42 @@ struct SettingsView: View {
         }
     }
     */
+
+    private var myFontsSection: some View {
+        Section {
+            Button {
+                showingImporter = true
+            } label: {
+                Label("Import Fonts", systemImage: "plus.square.on.square")
+            }
+
+            ForEach(imports) { font in
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(Color.fontiAmber)
+                        .frame(width: 6, height: 6)
+                    Text(font.familyName)
+                        .font(.custom(font.familyName, size: 17))
+                    Spacer()
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        remove(font)
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                    }
+                }
+            }
+        } header: {
+            Text("My Fonts")
+        } footer: {
+            if imports.isEmpty {
+                Text("Import .ttf or .otf files to preview them alongside the system fonts.")
+            } else {
+                Text("\(imports.count) imported \(imports.count == 1 ? "font" : "fonts"). Swipe to remove.")
+            }
+        }
+    }
 
     private var defaultsSection: some View {
         Section {
@@ -137,6 +193,31 @@ struct SettingsView: View {
             for entry in saved {
                 modelContext.delete(entry)
             }
+        }
+    }
+
+    private func handleImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .failure(let error):
+            importError = error.localizedDescription
+        case .success(let urls):
+            var firstFailure: String?
+            for url in urls {
+                do {
+                    _ = try CustomFontManager.import(from: url, into: modelContext)
+                } catch let error as CustomFontError {
+                    if firstFailure == nil { firstFailure = error.errorDescription }
+                } catch {
+                    if firstFailure == nil { firstFailure = error.localizedDescription }
+                }
+            }
+            if let firstFailure { importError = firstFailure }
+        }
+    }
+
+    private func remove(_ font: ImportedFont) {
+        withAnimation(.snappy(duration: 0.25)) {
+            CustomFontManager.remove(font, from: modelContext)
         }
     }
 }

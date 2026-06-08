@@ -7,6 +7,6 @@ struct FontiApp: App {
         WindowGroup {
             RootView()
         }
-        .modelContainer(for: SavedFont.self)
+        .modelContainer(for: [SavedFont.self, ImportedFont.self])
     }
 }

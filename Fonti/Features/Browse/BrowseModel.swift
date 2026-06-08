@@ -5,15 +5,6 @@ import Observation
 @MainActor
 final class BrowseModel {
     var input: String = ""
-    let fonts: [FontFamily]
-
-    init(fonts: [FontFamily]) {
-        self.fonts = fonts
-    }
-
-    convenience init() {
-        self.init(fonts: SystemFontProvider.families())
-    }
 
     /// Resolved text for a card. Precedence: typed input → caller-supplied
     /// `fallback` (e.g. user default sample text) → family name.

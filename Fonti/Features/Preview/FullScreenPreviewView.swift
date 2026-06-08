@@ -19,7 +19,7 @@ struct FullScreenPreviewView: View {
     }
 
     var body: some View {
-        VStack {
+        VStack(spacing: 12) {
             Spacer()
             Text(text)
                 .font(styledFont)
@@ -34,9 +34,10 @@ struct FullScreenPreviewView: View {
                 isItalic: $isItalic,
                 shareSlot: shareSlot
             )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            PairingsStrip(family: family)
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
         .navigationTitle(family.displayName)
