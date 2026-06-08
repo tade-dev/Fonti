@@ -50,6 +50,7 @@ struct BrowseView: View {
             .navigationDestination(for: FontFamily.self) { family in
                 FullScreenPreviewView(family: family, initialText: model.input)
                     .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
+                    .environment(\.cardNamespace, cardNamespace)
             }
             .onChange(of: path) { _, newPath in
                 if newPath.isEmpty {

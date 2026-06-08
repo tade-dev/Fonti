@@ -3,6 +3,8 @@ import SwiftUI
 struct PairingsStrip: View {
     let family: FontFamily
 
+    @Environment(\.cardNamespace) private var sharedNamespace
+
     private var pairs: [FontFamily] {
         FontPairings.pairings(for: family.id).map {
             FontFamily(id: $0, displayName: $0)
@@ -22,7 +24,7 @@ struct PairingsStrip: View {
                     HStack(spacing: 10) {
                         ForEach(pairs) { pair in
                             NavigationLink(value: pair) {
-                                chip(for: pair)
+                                chipView(for: pair)
                             }
                             .buttonStyle(LiftChipButtonStyle())
                         }
@@ -31,6 +33,19 @@ struct PairingsStrip: View {
                     .padding(.vertical, 6)   // breathing room for the lift scale
                 }
             }
+        }
+    }
+
+    /// Wraps the chip with a `.matchedTransitionSource` when a shared
+    /// `cardNamespace` is in the environment. That makes the tap morph
+    /// chip → new Preview via the same zoom transition the destination
+    /// already declares.
+    @ViewBuilder
+    private func chipView(for pair: FontFamily) -> some View {
+        if let ns = sharedNamespace {
+            chip(for: pair).matchedTransitionSource(id: pair.id, in: ns)
+        } else {
+            chip(for: pair)
         }
     }
 
@@ -45,9 +60,7 @@ struct PairingsStrip: View {
     }
 }
 
-/// Spring-scaling chip with an amber glow on press. Used for pair chips so
-/// the tap feels like the card lifts before navigation, matching the
-/// lift+parallax+zoom pattern on Browse / Saved.
+/// Spring-scaling chip with an amber glow on press.
 struct LiftChipButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
