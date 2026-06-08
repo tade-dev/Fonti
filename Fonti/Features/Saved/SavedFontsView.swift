@@ -6,7 +6,7 @@ struct SavedFontsView: View {
     @Query(sort: \SavedFont.savedAt, order: .reverse) private var saved: [SavedFont]
 
     @State private var liftedFamilyId: String?
-    @State private var selectedFamily: FontFamily?
+    @State private var path: [FontFamily] = []
     @Namespace private var cardNamespace
 
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
@@ -17,30 +17,32 @@ struct SavedFontsView: View {
     ]
 
     var body: some View {
-        Group {
-            if saved.isEmpty {
-                emptyState
-            } else {
-                grid
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.fontiInk.ignoresSafeArea())
-        .navigationTitle("Saved")
-        .toolbarTitleDisplayMode(.inlineLarge)
-        .navigationDestination(item: $selectedFamily) { family in
-            FullScreenPreviewView(family: family, initialText: "")
-                .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
-        }
-        .onChange(of: selectedFamily) { _, newValue in
-            if newValue == nil {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    liftedFamilyId = nil
+        NavigationStack(path: $path) {
+            Group {
+                if saved.isEmpty {
+                    emptyState
+                } else {
+                    grid
                 }
             }
-        }
-        .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
-            (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.fontiInk.ignoresSafeArea())
+            .navigationTitle("Saved")
+            .toolbarTitleDisplayMode(.inlineLarge)
+            .navigationDestination(for: FontFamily.self) { family in
+                FullScreenPreviewView(family: family, initialText: "")
+                    .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
+            }
+            .onChange(of: path) { _, newPath in
+                if newPath.isEmpty {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        liftedFamilyId = nil
+                    }
+                }
+            }
+            .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
+                (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
+            }
         }
     }
 
@@ -84,7 +86,7 @@ struct SavedFontsView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
-            selectedFamily = family
+            path.append(family)
         }
     }
 
@@ -96,6 +98,6 @@ struct SavedFontsView: View {
 }
 
 #Preview("Empty") {
-    NavigationStack { SavedFontsView() }
+    SavedFontsView()
         .modelContainer(for: SavedFont.self, inMemory: true)
 }

@@ -9,11 +9,14 @@ struct RootView: View {
 
     var body: some View {
         TabView {
+            // Browse and Saved own their own NavigationStack so they can
+            // manage a typed [FontFamily] path (lets pair-chip taps in the
+            // Preview push more previews through a single destination).
             Tab("Browse", systemImage: "textformat") {
-                NavigationStack { BrowseView() }
+                BrowseView()
             }
             Tab("Saved", systemImage: "heart") {
-                NavigationStack { SavedFontsView() }
+                SavedFontsView()
             }
             Tab("Settings", systemImage: "gear") {
                 NavigationStack { SettingsView() }

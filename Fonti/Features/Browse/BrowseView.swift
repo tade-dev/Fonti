@@ -4,57 +4,56 @@ import SwiftData
 struct BrowseView: View {
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
-    @State private var selectedFamily: FontFamily?
+    @State private var path: [FontFamily] = []
     @Namespace private var cardNamespace
 
     @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
     @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 14) {
-                ForEach(model.fonts) { family in
-                    FontCard(
-                        family: family,
-                        displayText: model.displayText(for: family, fallback: defaultSampleText),
-                        isLifted: liftedFamilyId == family.id,
-                        isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
-                        namespace: cardNamespace,
-                        onTap: { tapped(family) }
-                    )
+        NavigationStack(path: $path) {
+            ScrollView {
+                LazyVStack(spacing: 14) {
+                    ForEach(model.fonts) { family in
+                        FontCard(
+                            family: family,
+                            displayText: model.displayText(for: family, fallback: defaultSampleText),
+                            isLifted: liftedFamilyId == family.id,
+                            isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
+                            namespace: cardNamespace,
+                            onTap: { tapped(family) }
+                        )
+                    }
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 24)
-        }
-        .scrollDismissesKeyboard(.immediately)
-        .background(Color.fontiInk.ignoresSafeArea())
-        .dismissKeyboardOnBackgroundTap()
-        .navigationDestination(item: $selectedFamily) { family in
-            FullScreenPreviewView(
-                family: family,
-                initialText: model.input
-            )
-            .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
-        }
-        .onChange(of: selectedFamily) { _, newValue in
-            if newValue == nil {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    liftedFamilyId = nil
-                }
-            }
-        }
-        .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
-            (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
-        }
-        .safeAreaInset(edge: .top) {
-            inputBar
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.bottom, 24)
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .background(Color.fontiInk.ignoresSafeArea())
+            .dismissKeyboardOnBackgroundTap()
+            .navigationDestination(for: FontFamily.self) { family in
+                FullScreenPreviewView(family: family, initialText: model.input)
+                    .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
+            }
+            .onChange(of: path) { _, newPath in
+                if newPath.isEmpty {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        liftedFamilyId = nil
+                    }
+                }
+            }
+            .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
+                (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
+            }
+            .safeAreaInset(edge: .top) {
+                inputBar
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+            }
+            .navigationTitle("Fonti")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
-        .navigationTitle("Fonti")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var inputBar: some View {
@@ -84,12 +83,12 @@ struct BrowseView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
-            selectedFamily = family
+            path.append(family)
         }
     }
 }
 
 #Preview {
-    NavigationStack { BrowseView() }
+    BrowseView()
         .modelContainer(for: SavedFont.self, inMemory: true)
 }
