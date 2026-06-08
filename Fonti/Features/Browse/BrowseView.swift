@@ -7,14 +7,30 @@ struct BrowseView: View {
     @State private var path: [FontFamily] = []
     @Namespace private var cardNamespace
 
+    @Query(sort: \ImportedFont.familyName) private var imports: [ImportedFont]
+
     @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
     @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
+
+    private var allFonts: [FontFamily] {
+        // Core Text registration makes imported fonts also appear in
+        // UIFont.familyNames — strip the system duplicate so each family
+        // shows up exactly once (with isImported=true winning, so the
+        // amber dot renders).
+        let importedNames = Set(imports.map { $0.familyName })
+        let system = SystemFontProvider.families()
+            .filter { !importedNames.contains($0.id) }
+        let imported = imports.map {
+            FontFamily(id: $0.familyName, displayName: $0.familyName, isImported: true)
+        }
+        return (system + imported).sorted { $0.id.lowercased() < $1.id.lowercased() }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(spacing: 14) {
-                    ForEach(model.fonts) { family in
+                    ForEach(allFonts) { family in
                         FontCard(
                             family: family,
                             displayText: model.displayText(for: family, fallback: defaultSampleText),

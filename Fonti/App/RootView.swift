@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
+
     // Light/System modes are intentionally disabled — Fonti is dark-only for v1.
     // Re-enable by uncommenting the AppStorage above and reading appearance.colorScheme
     // below, and unhiding the Appearance section in SettingsView.
@@ -25,6 +27,12 @@ struct RootView: View {
         .tint(.fontiAmber)
         .preferredColorScheme(.dark)
         .tabBarMinimizeBehavior(.onScrollDown)
+        .task {
+            // Register every persisted ImportedFont with Core Text once at
+            // launch. CTFont registration doesn't survive across app launches.
+            let imports = (try? modelContext.fetch(FetchDescriptor<ImportedFont>())) ?? []
+            CustomFontManager.registerAll(imports)
+        }
     }
 }
 
