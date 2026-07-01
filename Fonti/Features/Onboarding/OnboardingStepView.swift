@@ -6,8 +6,7 @@ struct OnboardingStepView: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(Color.white)
+            illustration
                 .frame(height: illustrationHeight)
                 .frame(maxWidth: .infinity)
 
@@ -28,6 +27,18 @@ struct OnboardingStepView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 12)
+    }
+
+    @ViewBuilder
+    private var illustration: some View {
+        switch step.illustration {
+        case .everyFontLive:
+            EveryFontLiveIllustration()
+        case .pairsThatWork:
+            PairsThatWorkIllustration()
+        case .keepWhatYouLove:
+            KeepWhatYouLoveIllustration()
+        }
     }
 }
 
