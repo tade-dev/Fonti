@@ -5,6 +5,7 @@ struct BrowseView: View {
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
+    @State private var didAppear = false
     @Namespace private var cardNamespace
 
     @Query(sort: \ImportedFont.familyName) private var imports: [ImportedFont]
@@ -30,7 +31,7 @@ struct BrowseView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(spacing: 14) {
-                    ForEach(allFonts) { family in
+                    ForEach(Array(allFonts.enumerated()), id: \.element.id) { index, family in
                         FontCard(
                             family: family,
                             displayText: model.displayText(for: family, fallback: defaultSampleText),
@@ -38,6 +39,14 @@ struct BrowseView: View {
                             isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
                             namespace: cardNamespace,
                             onTap: { tapped(family) }
+                        )
+                        .opacity(didAppear ? 1 : 0)
+                        .blur(radius: didAppear ? 0 : 8)
+                        .offset(y: didAppear ? 0 : 60)
+                        .scaleEffect(didAppear ? 1 : 0.92)
+                        .animation(
+                            .smooth(duration: 0.75).delay(Double(min(index, 8)) * 0.08 + 0.2),
+                            value: didAppear
                         )
                     }
                 }
@@ -66,6 +75,15 @@ struct BrowseView: View {
                 inputBar
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
+                    .opacity(didAppear ? 1 : 0)
+                    .offset(y: didAppear ? 0 : -30)
+                    .blur(radius: didAppear ? 0 : 6)
+                    .animation(.smooth(duration: 0.6).delay(0.1), value: didAppear)
+            }
+            .task(id: "browse-enter") {
+                guard !didAppear else { return }
+                try? await Task.sleep(for: .milliseconds(60))
+                didAppear = true
             }
             .navigationTitle("Fonti")
             .navigationBarTitleDisplayMode(.inline)

@@ -9,7 +9,10 @@ struct FontiApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                RootView()
+                if splashDone && hasCompletedOnboarding {
+                    RootView()
+                        .transition(.opacity)
+                }
 
                 if splashDone && !hasCompletedOnboarding {
                     OnboardingView {
