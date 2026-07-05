@@ -148,7 +148,8 @@ ModelEntity(mesh:, materials: [selectedMaterial])
         ▼
 Pivot corrected to geometric center
 Placed at world position (0, 0, -0.4)
-Initial scale 0.15 with spring entrance (0 → 1 over 0.4 s, overshoot to 1.05, settle)
+Initial scale: 0.15 (readable at ~40 cm distance; user pinches up from here)
+Spring entrance: scale animates 0 → 0.15 over 0.4 s, overshoots to 0.1575 (5 %), settles
 ```
 
 Font trait handling: if bold or italic is on in Preview, resolve via `UIFontDescriptor.withSymbolicTraits(...)`. Fonts that do not support the requested trait fall back to the plain family — matching the existing Preview behavior of dimming unsupported toggles.
@@ -277,7 +278,7 @@ Sharing: iOS's `ShareLink` does not natively share Live Photos, so we present `U
 | Pinch | Scale (0.02× to 5×) | Springs at bounds. Selection haptic on each 0.5× tick. |
 | Drag (1 finger) | Translate parallel to camera plane | Fixed depth — feels controllable, not free 3D. |
 | Rotation (2 fingers) | Y-axis spin | Snaps to nearest 15° with light haptic. |
-| Reset button | Recenter text at `(0, 0, -0.4)`, scale 1.0 | Spring animation, medium haptic. |
+| Reset button | Recenter text at `(0, 0, -0.4)`, restore initial scale 0.15 and 0° rotation | Spring animation, medium haptic. |
 | Long-press on text | (reserved for future) | No action in v1. |
 | Tap on empty space | No action | Prevents accidental deselection. |
 
