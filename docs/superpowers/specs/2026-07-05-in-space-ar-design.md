@@ -59,7 +59,7 @@ Fonti/
 ├── Features/
 │   └── InSpace/
 │       ├── InSpaceView.swift          // SwiftUI screen host, presented via fullScreenCover
-│       ├── InSpaceScene.swift         // RealityView + entity management
+│       ├── InSpaceScene.swift         // UIViewRepresentable + ARView + entity management
 │       ├── InSpaceControls.swift      // shutter, mode chip, material chip, reset, close
 │       ├── InSpaceGestures.swift      // pinch scale, drag translate, two-finger rotate
 │       └── CapturePreviewSheet.swift  // post-capture preview + share
@@ -80,7 +80,7 @@ Fonti/
 
 ### 4.3 Key architectural decisions
 
-1. **`RealityView` over `ARView`.** iOS 26+ gives us the SwiftUI-native API; state binding is direct and gestures compose cleanly without `UIViewRepresentable`.
+1. **`UIViewRepresentable` wrapping `ARView`, not `RealityView`.** Although iOS 26 gives us the SwiftUI-native `RealityView`, we pragmatically use the mature `ARView` path because: (a) `arView.snapshot(saveToHDR:completion:)` is the reliable snapshot API our capture pipeline depends on; (b) `ARSessionDelegate` for tracking-state observation is straightforward on `ARView`; (c) `renderOptions.insert(.disableCameraGrain)` is `ARView`-only and needed for thermal degradation; (d) `UIGestureRecognizer` bridging is the tested path. Wrapped in a `UIViewRepresentable` so the rest of the screen stays SwiftUI-native.
 2. **World tracking, no plane detection.** `ARWorldTrackingConfiguration` is used for stable world-space anchoring, but plane detection is disabled. Text is placed once at world position `(0, 0, -0.4 m)` when the scene loads; the user walks around it.
 3. **Three capture paths, one coordinator.** `ARCaptureCoordinator` presents a single interface to the view layer (`capture(mode:) async throws -> CapturedMedia`) and hides the mode-specific plumbing.
 4. **`MeshResource.generateText` for text geometry.** Extrusion depth of `0.02 m`. Environment texturing (`.automatic`) supplies image-based lighting from the camera feed — no manual lights.
@@ -306,7 +306,7 @@ Fades in over 0.5 s, sits for 4 s, fades out. Dismisses immediately on any gestu
 | Recording interrupted (call, alarm) | If ≥ 1 s captured, save what we have; else discard. Toast: *"Recording ended."* |
 | Low storage (< 100 MB free) | Video and Live chips greyed with warning icon. Photo still works. |
 | Photo Library permission denied for Live Photo | Fall back to sharing paired URLs via `UIActivityViewController` from app sandbox. |
-| Thermal state `.serious` | Reduce render quality on the `RealityView`. |
+| Thermal state `.serious` | Reduce render quality on the `ARView` via `renderOptions`. |
 | Thermal state `.critical` | Toast: *"Cool down — AR quality reduced."* Also drop max video length to 5 s. |
 | Preview text is empty | The AR button on `PreviewControls` is disabled + greyed (matches existing bold/italic pattern). |
 | Font meshing hangs (rare emoji / CJK cases) | 2 s timeout on `MeshResource.generateText`. On failure: *"This font doesn't work in AR yet."* + close. |
