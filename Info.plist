@@ -4,6 +4,10 @@
 <dict>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>Fonti needs the camera to place your type in the world.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Fonti saves your AR captures to Photos.</string>
     <key>UILaunchScreen</key>
     <dict>
         <key>UIColorName</key>
