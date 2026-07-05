@@ -10,6 +10,8 @@ struct InSpaceControls: View {
     let onMaterialCycle: () -> Void
     let onClose: () -> Void
 
+    @State private var blinkOn: Bool = true
+
     var body: some View {
         VStack {
             HStack {
@@ -47,8 +49,14 @@ struct InSpaceControls: View {
             Circle()
                 .fill(Color.red)
                 .frame(width: 10, height: 10)
-                .opacity(0.9)
-                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: isRecording)
+                .opacity(blinkOn ? 0.9 : 0.25)
+                .task(id: isRecording) {
+                    guard isRecording else { blinkOn = true; return }
+                    while !Task.isCancelled && isRecording {
+                        withAnimation(.easeInOut(duration: 0.45)) { blinkOn.toggle() }
+                        try? await Task.sleep(nanoseconds: 450_000_000)
+                    }
+                }
             Text("REC")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.fontiCream)

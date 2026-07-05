@@ -27,10 +27,15 @@ final class ReplayKitScreenRecorder: ScreenRecording {
             .appendingPathComponent("in-space-\(UUID().uuidString).mov")
         outputURL = url
 
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            recorder.startRecording { error in
-                if let error { cont.resume(throwing: error) } else { cont.resume() }
+        do {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                recorder.startRecording { error in
+                    if let error { cont.resume(throwing: error) } else { cont.resume() }
+                }
             }
+        } catch {
+            outputURL = nil
+            throw error
         }
     }
 

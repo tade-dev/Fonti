@@ -94,33 +94,35 @@ struct CapturePreviewSheet: View {
     }
 }
 
+private final class LoopingPlayerView: UIView {
+    var playerLayer: AVPlayerLayer?
+    var looper: AVPlayerLooper?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer?.frame = bounds
+    }
+}
+
 private struct LoopingPlayer: UIViewRepresentable {
     let url: URL
 
-    func makeUIView(context: Context) -> UIView {
-        let container = UIView()
+    func makeUIView(context: Context) -> LoopingPlayerView {
+        let container = LoopingPlayerView()
         let player = AVQueuePlayer()
         let item = AVPlayerItem(url: url)
-        let looper = AVPlayerLooper(player: player, templateItem: item)
-        context.coordinator.looper = looper
+        container.looper = AVPlayerLooper(player: player, templateItem: item)
 
         let layer = AVPlayerLayer(player: player)
         layer.videoGravity = .resizeAspect
         container.layer.addSublayer(layer)
-        context.coordinator.playerLayer = layer
+        container.playerLayer = layer
         player.play()
         return container
     }
 
-    func updateUIView(_ view: UIView, context: Context) {
-        context.coordinator.playerLayer?.frame = view.bounds
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    final class Coordinator {
-        var looper: AVPlayerLooper?
-        var playerLayer: AVPlayerLayer?
+    func updateUIView(_ view: LoopingPlayerView, context: Context) {
+        view.setNeedsLayout()
     }
 }
 
