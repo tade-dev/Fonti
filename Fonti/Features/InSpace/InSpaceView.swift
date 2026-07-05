@@ -16,27 +16,18 @@ struct InSpaceView: View {
     @State private var material: InSpaceMaterial = .cream
     @State private var arView: ARView?
     @State private var textEntity: ModelEntity?
-    @State private var isRecording = false
     @State private var isBusy = false
     @State private var captured: CapturedMedia?
     @State private var errorState: ErrorState?
     @State private var showHint = false
     @State private var toastMessage: String?
-    @State private var lastTrackingToastAt: Date = .distantPast
-
-    private let coordinator: ARCaptureCoordinator
+    @State private var coordinator: ARCaptureCoordinator?
 
     init(text: String, familyName: String, initialSize: CGFloat, bold: Bool, italic: Bool) {
         self.text = text
         self.familyName = familyName
         self.bold = bold
         self.italic = italic
-
-        let recorder = ReplayKitScreenRecorder()
-        self.coordinator = ARCaptureCoordinator(
-            snapshotter: { nil },
-            recorder: recorder
-        )
     }
 
     var body: some View {
@@ -67,7 +58,19 @@ struct InSpaceView: View {
         } message: { state in
             Text(state.message)
         }
-        .task { await checkPermissionAndShowHint() }
+        .task {
+            if coordinator == nil {
+                coordinator = ARCaptureCoordinator(
+                    snapshotter: { nil },
+                    recorder: ReplayKitScreenRecorder()
+                )
+            }
+            await checkPermissionAndShowHint()
+        }
+        .task(id: arView) {
+            guard let v = arView else { return }
+            coordinator?.updateSnapshotter { await v.snapshotImage() }
+        }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
@@ -88,7 +91,7 @@ struct InSpaceView: View {
             InSpaceControls(
                 mode: $mode,
                 material: $material,
-                isRecording: isRecording,
+                isRecording: coordinator?.isRecording ?? false,
                 onShutter: shutterTapped,
                 onReset: resetTextEntity,
                 onMaterialCycle: { material = material.next() },
@@ -119,19 +122,15 @@ struct InSpaceView: View {
                     }
             }
         }
-        .onChange(of: arView) { _, newValue in
-            if let v = newValue {
-                coordinator.updateSnapshotter { await v.snapshotImage() }
-            }
-        }
         .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
             switch ProcessInfo.processInfo.thermalState {
-            case .serious:
-                break
-            case .critical:
-                withAnimation { toastMessage = "Cool down — AR quality reduced." }
+            case .serious, .critical:
+                arView?.renderOptions.insert(.disableCameraGrain)
+                if ProcessInfo.processInfo.thermalState == .critical {
+                    withAnimation { toastMessage = "Cool down — AR quality reduced." }
+                }
             default:
-                break
+                arView?.renderOptions.remove(.disableCameraGrain)
             }
         }
         .onAppear { checkStorage() }
@@ -164,10 +163,14 @@ struct InSpaceView: View {
     }
 
     private func shutterTapped() {
+        guard let coordinator else { return }
+        if mode == .video, coordinator.isRecording {
+            coordinator.stopRecordingEarly()
+            return
+        }
         guard !isBusy else { return }
         Task {
             isBusy = true
-            if mode == .video || mode == .live { isRecording = true }
             do {
                 let media = try await coordinator.capture(mode: mode)
                 captured = media
@@ -175,7 +178,6 @@ struct InSpaceView: View {
             } catch {
                 errorState = .captureFailed
             }
-            isRecording = false
             isBusy = false
         }
     }

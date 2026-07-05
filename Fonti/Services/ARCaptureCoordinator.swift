@@ -9,9 +9,13 @@ enum CaptureError: Error, Equatable {
 @MainActor
 final class ARCaptureCoordinator {
     static let maxVideoDurationDefault: Double = 15
+    static let maxVideoDurationThermal: Double = 5
 
     private var snapshotter: () async -> UIImage?
     private let recorder: ScreenRecording
+    private var videoSleepTask: Task<Void, Never>?
+
+    var isRecording: Bool { videoSleepTask != nil }
 
     init(snapshotter: @escaping () async -> UIImage?, recorder: ScreenRecording) {
         self.snapshotter = snapshotter
@@ -22,15 +26,25 @@ final class ARCaptureCoordinator {
         self.snapshotter = snap
     }
 
+    private static func maxVideoDurationForCurrentThermal() -> Double {
+        ProcessInfo.processInfo.thermalState == .critical
+            ? maxVideoDurationThermal
+            : maxVideoDurationDefault
+    }
+
     func capture(mode: InSpaceMode) async throws -> CapturedMedia {
         switch mode {
         case .photo:
             return .photo(try await capturePhoto())
         case .video:
-            return .video(try await recordVideo(maxSeconds: Self.maxVideoDurationDefault))
+            return .video(try await recordVideo(maxSeconds: Self.maxVideoDurationForCurrentThermal()))
         case .live:
             return try await captureLivePhoto()
         }
+    }
+
+    func stopRecordingEarly() {
+        videoSleepTask?.cancel()
     }
 
     private func capturePhoto() async throws -> URL {
@@ -47,7 +61,13 @@ final class ARCaptureCoordinator {
 
     func recordVideo(maxSeconds: Double) async throws -> URL {
         try await recorder.start()
-        try? await Task.sleep(nanoseconds: UInt64(maxSeconds * 1_000_000_000))
+        let sleep: Task<Void, Never> = Task {
+            try? await Task.sleep(nanoseconds: UInt64(maxSeconds * 1_000_000_000))
+            return
+        }
+        videoSleepTask = sleep
+        await sleep.value
+        videoSleepTask = nil
         let raw = try await recorder.stop()
         return try await burnWatermark(into: raw)
     }

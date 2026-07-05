@@ -108,16 +108,20 @@ struct InSpaceScene: UIViewRepresentable {
             }
         }
 
+        private var currentSignedRotation: Float = 0
+
         @objc func handleRotate(_ g: UIRotationGestureRecognizer) {
             guard let entity = parent?.textEntity else { return }
             switch g.state {
             case .began:
-                startingRotation = entity.orientation.quaternionAngle
+                startingRotation = currentSignedRotation
             case .changed:
                 let raw = startingRotation - Float(g.rotation)
+                currentSignedRotation = raw
                 entity.setOrientation(simd_quatf(angle: raw, axis: SIMD3<Float>(0, 1, 0)), relativeTo: nil)
             case .ended:
-                let snapped = InSpaceGestures.snapRotation(entity.orientation.quaternionAngle)
+                let snapped = InSpaceGestures.snapRotation(currentSignedRotation)
+                currentSignedRotation = snapped
                 entity.setOrientation(simd_quatf(angle: snapped, axis: SIMD3<Float>(0, 1, 0)), relativeTo: nil)
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             default: break
