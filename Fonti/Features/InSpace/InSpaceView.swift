@@ -183,7 +183,11 @@ struct InSpaceView: View {
                 captured = media
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             } catch {
-                errorState = .captureFailed
+                errorState = ErrorState(
+                    title: "Capture failed",
+                    message: "\(error)",
+                    primaryButton: Button("OK") {}
+                )
             }
             isBusy = false
         }

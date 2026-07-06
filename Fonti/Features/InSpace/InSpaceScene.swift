@@ -25,16 +25,14 @@ struct InSpaceScene: UIViewRepresentable {
         view.session.run(config)
         view.environment.lighting.intensityExponent = 2.0
 
-        // Anchor the text to the camera so it stays in view regardless of
-        // where the phone is pointing when the sheet opens. Offset -0.4 m
-        // along -Z places it 40 cm in front of the camera.
-        let anchor = AnchorEntity(.camera)
-        anchor.position = SIMD3<Float>(0, 0, -0.4)
+        // World-anchored at ARKit's origin (the phone's starting pose). The
+        // camera-anchored variant we tried first does not reliably show
+        // entities in iOS 26 with this ARView + UIViewRepresentable setup.
+        let anchor = AnchorEntity(world: matrix_identity_float4x4)
         view.scene.anchors.append(anchor)
 
-        // Explicit directional light — the PBR material otherwise depends on
-        // environment texturing, which takes a few seconds to build up from
-        // the camera feed and can leave the text near-black at first render.
+        // Directional light so the PBR text material is visible before
+        // environment texturing has caught up from the camera feed.
         let light = DirectionalLight()
         light.light.color = .white
         light.light.intensity = 8000
@@ -51,6 +49,7 @@ struct InSpaceScene: UIViewRepresentable {
                 material: material
             )
             entity.scale = SIMD3<Float>(repeating: 0.15)
+            entity.position = SIMD3<Float>(0, 0, -0.5)
             anchor.addChild(entity)
 
             DispatchQueue.main.async {
