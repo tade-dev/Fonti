@@ -15,6 +15,7 @@ struct InSpaceScene: UIViewRepresentable {
     @Binding var material: InSpaceMaterial
     @Binding var arView: ARView?
     @Binding var textEntity: ModelEntity?
+    @Binding var meshError: String?
 
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
@@ -22,10 +23,23 @@ struct InSpaceScene: UIViewRepresentable {
         config.planeDetection = []
         config.environmentTexturing = .automatic
         view.session.run(config)
-        view.environment.lighting.intensityExponent = 1.0
+        view.environment.lighting.intensityExponent = 2.0
 
-        let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, -0.4))
+        // Anchor the text to the camera so it stays in view regardless of
+        // where the phone is pointing when the sheet opens. Offset -0.4 m
+        // along -Z places it 40 cm in front of the camera.
+        let anchor = AnchorEntity(.camera)
+        anchor.position = SIMD3<Float>(0, 0, -0.4)
         view.scene.anchors.append(anchor)
+
+        // Explicit directional light — the PBR material otherwise depends on
+        // environment texturing, which takes a few seconds to build up from
+        // the camera feed and can leave the text near-black at first render.
+        let light = DirectionalLight()
+        light.light.color = .white
+        light.light.intensity = 8000
+        light.orientation = simd_quatf(angle: -.pi / 4, axis: SIMD3<Float>(1, 0, 0))
+        anchor.addChild(light)
 
         do {
             let entity = try ARTextMeshBuilder.build(
@@ -36,19 +50,19 @@ struct InSpaceScene: UIViewRepresentable {
                 extrusion: 0.02,
                 material: material
             )
-            entity.scale = SIMD3<Float>(repeating: 0.001)
+            entity.scale = SIMD3<Float>(repeating: 0.15)
             anchor.addChild(entity)
-
-            var target = entity.transform
-            target.scale = SIMD3<Float>(repeating: 0.15)
-            entity.move(to: target, relativeTo: entity.parent, duration: 0.4, timingFunction: .easeOut)
 
             DispatchQueue.main.async {
                 self.textEntity = entity
                 self.arView = view
+                self.meshError = nil
             }
         } catch {
-            // Mesh failure — handled by parent view.
+            DispatchQueue.main.async {
+                self.meshError = "Could not build 3D text: \(error)"
+                self.arView = view
+            }
         }
 
         installGestures(on: view, context: context)

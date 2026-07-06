@@ -16,6 +16,7 @@ struct InSpaceView: View {
     @State private var material: InSpaceMaterial = .cream
     @State private var arView: ARView?
     @State private var textEntity: ModelEntity?
+    @State private var meshError: String?
     @State private var isBusy = false
     @State private var captured: CapturedMedia?
     @State private var errorState: ErrorState?
@@ -84,7 +85,8 @@ struct InSpaceView: View {
                 italic: italic,
                 material: $material,
                 arView: $arView,
-                textEntity: $textEntity
+                textEntity: $textEntity,
+                meshError: $meshError
             )
             .ignoresSafeArea()
 
@@ -120,6 +122,11 @@ struct InSpaceView: View {
                         try? await Task.sleep(nanoseconds: 3_000_000_000)
                         withAnimation { toastMessage = nil }
                     }
+            }
+        }
+        .onChange(of: meshError) { _, err in
+            if let err {
+                withAnimation { toastMessage = err }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)) { _ in
