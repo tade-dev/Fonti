@@ -1,4 +1,3 @@
-// Fonti/Services/LivePhotoComposer.swift
 import AVFoundation
 import ImageIO
 import MobileCoreServices

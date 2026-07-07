@@ -2,6 +2,7 @@ import SwiftUI
 import RealityKit
 import AVFoundation
 import ARKit
+import StoreKit
 
 struct InSpaceView: View {
     let text: String
@@ -10,6 +11,7 @@ struct InSpaceView: View {
     let italic: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestReview) private var requestReview
     @AppStorage("hasSeenInSpaceHint") private var hasSeenHint = false
 
     @State private var mode: InSpaceMode = .photo
@@ -18,6 +20,7 @@ struct InSpaceView: View {
     @State private var textEntity: ModelEntity?
     @State private var meshError: String?
     @State private var isBusy = false
+    @State private var isCapturing = false
     @State private var captured: CapturedMedia?
     @State private var errorState: ErrorState?
     @State private var showHint = false
@@ -71,6 +74,10 @@ struct InSpaceView: View {
         .task(id: arView) {
             guard let v = arView else { return }
             coordinator?.updateSnapshotter { await v.snapshotImage() }
+            // Swap in the AR-only recorder now that we have the ARView.
+            // The placeholder ReplayKit recorder installed at coordinator
+            // creation time is only used if this never fires.
+            coordinator?.updateRecorder(ARViewFrameRecorder(arView: v))
         }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
@@ -93,7 +100,7 @@ struct InSpaceView: View {
             InSpaceControls(
                 mode: $mode,
                 material: $material,
-                isRecording: coordinator?.isRecording ?? false,
+                isRecording: isCapturing,
                 onShutter: shutterTapped,
                 onReset: resetTextEntity,
                 onMaterialCycle: { material = material.next() },
@@ -171,17 +178,19 @@ struct InSpaceView: View {
 
     private func shutterTapped() {
         guard let coordinator else { return }
-        if mode == .video, coordinator.isRecording {
+        if mode == .video, isCapturing {
             coordinator.stopRecordingEarly()
             return
         }
         guard !isBusy else { return }
         Task {
             isBusy = true
+            if mode == .video || mode == .live { isCapturing = true }
             do {
                 let media = try await coordinator.capture(mode: mode)
                 captured = media
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                await handlePostCaptureEngagement()
             } catch {
                 errorState = ErrorState(
                     title: "Capture failed",
@@ -189,7 +198,22 @@ struct InSpaceView: View {
                     primaryButton: Button("OK") {}
                 )
             }
+            isCapturing = false
             isBusy = false
+        }
+    }
+
+    // Runs after a successful capture. Bumps the persistent counter and
+    // triggers the App Store review prompt once, on the 3rd capture — a
+    // natural "success moment". Apple's own throttle (max 3 prompts/year)
+    // handles the "don't be annoying" side.
+    private func handlePostCaptureEngagement() async {
+        let count = RatingPrompt.recordCapture()
+        if count == 3 {
+            // Small delay lets the CapturePreviewSheet finish presenting so
+            // the review dialog layers cleanly on top of it.
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            requestReview()
         }
     }
 

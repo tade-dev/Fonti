@@ -12,7 +12,7 @@ final class ARCaptureCoordinator {
     static let maxVideoDurationThermal: Double = 5
 
     private var snapshotter: () async -> UIImage?
-    private let recorder: ScreenRecording
+    private var recorder: ScreenRecording
     private var videoSleepTask: Task<Void, Never>?
 
     var isRecording: Bool { videoSleepTask != nil }
@@ -24,6 +24,10 @@ final class ARCaptureCoordinator {
 
     func updateSnapshotter(_ snap: @escaping () async -> UIImage?) {
         self.snapshotter = snap
+    }
+
+    func updateRecorder(_ recorder: ScreenRecording) {
+        self.recorder = recorder
     }
 
     private static func maxVideoDurationForCurrentThermal() -> Double {
