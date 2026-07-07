@@ -6,6 +6,8 @@ struct PreviewControls<Share: View>: View {
     @Binding var isBold: Bool
     @Binding var isItalic: Bool
     let shareSlot: Share
+    let arEnabled: Bool
+    let onOpenAR: () -> Void
 
     private var supportsBold: Bool { FontTraitSupport.supportsBold(family: family.id) }
     private var supportsItalic: Bool { FontTraitSupport.supportsItalic(family: family.id) }
@@ -25,11 +27,27 @@ struct PreviewControls<Share: View>: View {
                 toggle("I", isOn: $isItalic, enabled: supportsItalic)
                     .font(.system(size: 16).italic())
                 Spacer()
+                arButton
                 shareSlot
             }
         }
         .padding(16)
         .glassEffect(in: .rect(cornerRadius: 22))
+    }
+
+    private var arButton: some View {
+        Button {
+            onOpenAR()
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } label: {
+            Image(systemName: "cube.transparent")
+                .padding(.horizontal, 6)
+        }
+        .buttonStyle(.glass)
+        .tint(.fontiCream)
+        .disabled(!arEnabled)
+        .opacity(arEnabled ? 1 : 0.35)
+        .accessibilityLabel("Place in AR")
     }
 
     private func toggle(_ label: String, isOn: Binding<Bool>, enabled: Bool) -> some View {

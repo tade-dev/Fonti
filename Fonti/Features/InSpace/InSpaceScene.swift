@@ -1,0 +1,163 @@
+// Fonti/Features/InSpace/InSpaceScene.swift
+//
+// UIViewRepresentable wrapping ARView for world-tracked 3-D text with
+// pinch/pan/rotate gesture handling.
+
+import SwiftUI
+import RealityKit
+import ARKit
+
+struct InSpaceScene: UIViewRepresentable {
+    let text: String
+    let familyName: String
+    let bold: Bool
+    let italic: Bool
+    @Binding var material: InSpaceMaterial
+    @Binding var arView: ARView?
+    @Binding var textEntity: ModelEntity?
+    @Binding var meshError: String?
+
+    func makeUIView(context: Context) -> ARView {
+        let view = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
+        let config = ARWorldTrackingConfiguration()
+        config.planeDetection = []
+        config.environmentTexturing = .automatic
+        view.session.run(config)
+        view.environment.lighting.intensityExponent = 2.0
+
+        // World-anchored at ARKit's origin (the phone's starting pose). The
+        // camera-anchored variant we tried first does not reliably show
+        // entities in iOS 26 with this ARView + UIViewRepresentable setup.
+        let anchor = AnchorEntity(world: matrix_identity_float4x4)
+        view.scene.anchors.append(anchor)
+
+        // Directional light so the PBR text material is visible before
+        // environment texturing has caught up from the camera feed.
+        let light = DirectionalLight()
+        light.light.color = .white
+        light.light.intensity = 8000
+        light.orientation = simd_quatf(angle: -.pi / 4, axis: SIMD3<Float>(1, 0, 0))
+        anchor.addChild(light)
+
+        do {
+            let entity = try ARTextMeshBuilder.build(
+                text: text,
+                familyName: familyName,
+                bold: bold,
+                italic: italic,
+                extrusion: 0.02,
+                material: material
+            )
+            entity.scale = SIMD3<Float>(repeating: 0.15)
+            entity.position = SIMD3<Float>(0, 0, -0.4)
+            anchor.addChild(entity)
+
+            DispatchQueue.main.async {
+                self.textEntity = entity
+                self.arView = view
+                self.meshError = nil
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.meshError = "Could not build 3D text: \(error)"
+                self.arView = view
+            }
+        }
+
+        installGestures(on: view, context: context)
+        return view
+    }
+
+    func updateUIView(_ view: ARView, context: Context) {
+        guard let container = textEntity else { return }
+        // Container has no mesh; the text is its first child.
+        let textEntity = container.children.first as? ModelEntity
+        textEntity?.model?.materials = [makeMaterial(for: material)]
+    }
+
+    private func installGestures(on view: ARView, context: Context) {
+        let pinch = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePinch(_:)))
+        let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
+        let rotate = UIRotationGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleRotate(_:)))
+        for g in [pinch as UIGestureRecognizer, pan, rotate] { view.addGestureRecognizer(g) }
+        context.coordinator.parent = self
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        var parent: InSpaceScene?
+        private var startingScale: Float = 0.15
+        private var startingRotation: Float = 0
+        private var startingPosition: SIMD3<Float> = SIMD3(0, 0, -0.4)
+
+        @objc func handlePinch(_ g: UIPinchGestureRecognizer) {
+            guard let entity = parent?.textEntity else { return }
+            switch g.state {
+            case .began:
+                startingScale = entity.scale.x
+            case .changed:
+                let raw = startingScale * Float(g.scale)
+                let old = entity.scale.x
+                let clamped = InSpaceGestures.clampScale(raw)
+                entity.scale = SIMD3<Float>(repeating: clamped)
+                if InSpaceGestures.hapticTick(oldScale: old, newScale: clamped) {
+                    UISelectionFeedbackGenerator().selectionChanged()
+                }
+            default: break
+            }
+        }
+
+        @objc func handlePan(_ g: UIPanGestureRecognizer) {
+            guard let entity = parent?.textEntity, let view = g.view else { return }
+            switch g.state {
+            case .began:
+                startingPosition = entity.position(relativeTo: nil)
+            case .changed:
+                let t = g.translation(in: view)
+                let dx = Float(t.x) / 800
+                let dy = Float(-t.y) / 800
+                entity.setPosition(startingPosition + SIMD3<Float>(dx, dy, 0), relativeTo: nil)
+            default: break
+            }
+        }
+
+        private var currentSignedRotation: Float = 0
+
+        @objc func handleRotate(_ g: UIRotationGestureRecognizer) {
+            guard let entity = parent?.textEntity else { return }
+            switch g.state {
+            case .began:
+                startingRotation = currentSignedRotation
+            case .changed:
+                let raw = startingRotation - Float(g.rotation)
+                currentSignedRotation = raw
+                entity.setOrientation(simd_quatf(angle: raw, axis: SIMD3<Float>(0, 1, 0)), relativeTo: nil)
+            case .ended:
+                let snapped = InSpaceGestures.snapRotation(currentSignedRotation)
+                currentSignedRotation = snapped
+                entity.setOrientation(simd_quatf(angle: snapped, axis: SIMD3<Float>(0, 1, 0)), relativeTo: nil)
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            default: break
+            }
+        }
+    }
+
+    private func makeMaterial(for preset: InSpaceMaterial) -> RealityKit.Material {
+        let props = preset.materialProperties
+        var mat = SimpleMaterial(
+            color: props.baseColor,
+            roughness: .init(floatLiteral: props.roughness),
+            isMetallic: props.metallic > 0.5
+        )
+        if props.isTranslucent {
+            mat.color = .init(tint: props.baseColor.withAlphaComponent(0.5), texture: nil)
+        }
+        return mat
+    }
+}
+
+private extension simd_quatf {
+    var quaternionAngle: Float { 2 * acos(max(-1, min(1, self.real))) }
+}

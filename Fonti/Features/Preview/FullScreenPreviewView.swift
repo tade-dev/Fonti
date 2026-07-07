@@ -9,6 +9,7 @@ struct FullScreenPreviewView: View {
     @State private var size: CGFloat
     @State private var isBold: Bool = false
     @State private var isItalic: Bool = false
+    @State private var showAR: Bool = false
 
     init(family: FontFamily, initialText: String) {
         self.family = family
@@ -32,7 +33,9 @@ struct FullScreenPreviewView: View {
                 size: $size,
                 isBold: $isBold,
                 isItalic: $isItalic,
-                shareSlot: shareSlot
+                shareSlot: shareSlot,
+                arEnabled: !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                onOpenAR: { showAR = true }
             )
             PairingsStrip(family: family)
         }
@@ -51,6 +54,15 @@ struct FullScreenPreviewView: View {
                     .minimumScaleFactor(0.8)
                     .accessibilityHidden(true) // navigationTitle already announces this
             }
+        }
+        .fullScreenCover(isPresented: $showAR) {
+            InSpaceView(
+                text: text,
+                familyName: family.id,
+                initialSize: size,
+                bold: isBold,
+                italic: isItalic
+            )
         }
     }
 
