@@ -49,7 +49,7 @@ struct InSpaceScene: UIViewRepresentable {
                 material: material
             )
             entity.scale = SIMD3<Float>(repeating: 0.15)
-            entity.position = SIMD3<Float>(0, 0, -0.5)
+            entity.position = SIMD3<Float>(0, 0, -0.4)
             anchor.addChild(entity)
 
             DispatchQueue.main.async {
@@ -69,8 +69,10 @@ struct InSpaceScene: UIViewRepresentable {
     }
 
     func updateUIView(_ view: ARView, context: Context) {
-        guard let entity = textEntity else { return }
-        entity.model?.materials = [makePBR(for: material)]
+        guard let container = textEntity else { return }
+        // Container has no mesh; the text is its first child.
+        let textEntity = container.children.first as? ModelEntity
+        textEntity?.model?.materials = [makeMaterial(for: material)]
     }
 
     private func installGestures(on view: ARView, context: Context) {
@@ -142,21 +144,20 @@ struct InSpaceScene: UIViewRepresentable {
         }
     }
 
-    private func makePBR(for preset: InSpaceMaterial) -> RealityKit.Material {
+    private func makeMaterial(for preset: InSpaceMaterial) -> RealityKit.Material {
         let props = preset.materialProperties
-        var pbr = PhysicallyBasedMaterial()
-        pbr.baseColor = .init(tint: props.baseColor)
-        pbr.roughness = .init(floatLiteral: props.roughness)
-        pbr.metallic = .init(floatLiteral: props.metallic)
+        var mat = SimpleMaterial(
+            color: props.baseColor,
+            roughness: .init(floatLiteral: props.roughness),
+            isMetallic: props.metallic > 0.5
+        )
         if props.isTranslucent {
-            pbr.blending = .transparent(opacity: .init(floatLiteral: 0.4))
+            mat.color = .init(tint: props.baseColor.withAlphaComponent(0.5), texture: nil)
         }
-        return pbr
+        return mat
     }
 }
 
 private extension simd_quatf {
-    // Extracts the rotation angle (in radians) around the principal axis.
-    // 2 * acos(real) gives the total angle for unit quaternions.
     var quaternionAngle: Float { 2 * acos(max(-1, min(1, self.real))) }
 }

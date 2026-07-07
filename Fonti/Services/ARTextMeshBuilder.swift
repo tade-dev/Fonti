@@ -37,7 +37,11 @@ enum ARTextMeshBuilder {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ARTextMeshError.emptyText }
 
-        let font = resolveFont(familyName: familyName, bold: bold, italic: italic, size: 72)
+        // MeshResource.generateText treats the font's pointSize as world
+        // units (meters). A 1.0 base makes glyphs ≈1 m tall unscaled;
+        // combined with the 0.15 initial scale in InSpaceScene that lands
+        // at ≈15 cm tall, matching the spec's "readable at 40 cm distance".
+        let font = resolveFont(familyName: familyName, bold: bold, italic: italic, size: 1.0)
 
         let mesh = MeshResource.generateText(
             text,
@@ -49,9 +53,16 @@ enum ARTextMeshBuilder {
         )
 
         let mat = makeMaterial(from: material)
-        let entity = ModelEntity(mesh: mesh, materials: [mat])
-        centerPivot(of: entity)
-        return entity
+        let textEntity = ModelEntity(mesh: mesh, materials: [mat])
+        let bounds = textEntity.visualBounds(relativeTo: nil)
+        textEntity.position = -bounds.center
+
+        // Container's local origin sits at the text's visual center. Callers
+        // manipulate the container's transform (position/scale/rotation)
+        // without disturbing the centered offset applied to the child.
+        let container = ModelEntity()
+        container.addChild(textEntity)
+        return container
     }
 
     // Resolves a UIFont (which is MeshResource.Font in this SDK) from a family
@@ -75,19 +86,19 @@ enum ARTextMeshBuilder {
     }
 
     private static func makeMaterial(from preset: InSpaceMaterial) -> RealityKit.Material {
+        // SimpleMaterial responds to DirectionalLight and doesn't require the
+        // environment-texturing pass that PhysicallyBasedMaterial depends on,
+        // which is unreliable in the first seconds of an AR session.
         let props = preset.materialProperties
-        var pbr = PhysicallyBasedMaterial()
-        pbr.baseColor = .init(tint: props.baseColor)
-        pbr.roughness = .init(floatLiteral: props.roughness)
-        pbr.metallic = .init(floatLiteral: props.metallic)
+        var mat = SimpleMaterial(
+            color: props.baseColor,
+            roughness: .init(floatLiteral: props.roughness),
+            isMetallic: props.metallic > 0.5
+        )
         if props.isTranslucent {
-            pbr.blending = .transparent(opacity: .init(floatLiteral: 0.4))
+            mat.color = .init(tint: props.baseColor.withAlphaComponent(0.5), texture: nil)
         }
-        return pbr
+        return mat
     }
 
-    private static func centerPivot(of entity: ModelEntity) {
-        let bounds = entity.visualBounds(relativeTo: nil)
-        entity.position = -bounds.center
-    }
 }
