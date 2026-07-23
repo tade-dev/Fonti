@@ -7,6 +7,8 @@ private struct SpecimenView: View {
     let size: CGFloat
     let bold: Bool
     let italic: Bool
+    let background: PreviewBackground
+    let customImage: UIImage?
 
     private var font: Font {
         var f = Font.custom(family, size: size)
@@ -15,9 +17,13 @@ private struct SpecimenView: View {
         return f
     }
 
+    private var glyph: Color { background.glyphColor }
+    private var secondary: Color { background.secondaryGlyphColor }
+
     var body: some View {
         ZStack {
-            Color.fontiInk
+            background
+                .exportFill(customImage: customImage)
 
             // FONTI wordmark, top-left
             VStack {
@@ -25,7 +31,7 @@ private struct SpecimenView: View {
                     Text("FONTI")
                         .font(.system(size: 14, weight: .semibold))
                         .tracking(3)
-                        .foregroundStyle(Color.fontiCream.opacity(0.3))
+                        .foregroundStyle(secondary.opacity(0.55))
                     Spacer()
                 }
                 Spacer()
@@ -35,7 +41,7 @@ private struct SpecimenView: View {
             // User text, centred
             Text(text.isEmpty ? family : text)
                 .font(font)
-                .foregroundStyle(Color.fontiCream)
+                .foregroundStyle(glyph)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 80)
 
@@ -45,11 +51,12 @@ private struct SpecimenView: View {
                 Text(family.uppercased())
                     .font(.system(size: 18, weight: .medium))
                     .tracking(2)
-                    .foregroundStyle(Color.fontiCream.opacity(0.7))
+                    .foregroundStyle(secondary)
             }
             .padding(.bottom, 48)
         }
         .frame(width: 1080, height: 1080)
+        .clipped()
     }
 }
 
@@ -60,14 +67,18 @@ enum SpecimenRenderer {
         text: String,
         size: CGFloat,
         bold: Bool,
-        italic: Bool
+        italic: Bool,
+        background: PreviewBackground = .ink,
+        customImage: UIImage? = nil
     ) -> UIImage? {
         let view = SpecimenView(
             family: family,
             text: text,
             size: size,
             bold: bold,
-            italic: italic
+            italic: italic,
+            background: background,
+            customImage: customImage
         )
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3

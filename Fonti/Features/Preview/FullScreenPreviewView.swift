@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 struct FullScreenPreviewView: View {
@@ -12,6 +13,13 @@ struct FullScreenPreviewView: View {
     @State private var showAR: Bool = false
     @State private var showComposer: Bool = false
     @FocusState private var composerFocused: Bool
+
+    @State private var background: PreviewBackground = .ink
+    @State private var customImage: UIImage?
+    @State private var cardRotationY: Double = 0
+    @State private var isFlipping = false
+
+    @Namespace private var capsuleNamespace
 
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
 
@@ -32,39 +40,64 @@ struct FullScreenPreviewView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Spacer()
-            specimen
-            Spacer()
-
-            if showComposer {
-                composer
+            SpecimenCard(
+                background: background,
+                customImage: customImage,
+                rotationY: cardRotationY,
+                compact: showComposer
+            ) {
+                AnimatedSpecimenText(
+                    text: previewText,
+                    font: styledFont,
+                    color: background.glyphColor
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { beginEditing() }
+                .accessibilityHint("Double tap to edit")
+                .accessibilityAddTraits(.isButton)
+            }
+            .frame(maxHeight: showComposer ? 240 : .infinity)
+            .layoutPriority(1)
+            .sensoryFeedback(trigger: text.count) { old, new in
+                (hapticsEnabled && showComposer && old != new) ? .selection : nil
             }
 
-            PreviewControls(
-                family: family,
-                size: $size,
-                isBold: $isBold,
-                isItalic: $isItalic,
-                shareSlot: shareSlot,
-                arEnabled: true,
-                isEditing: showComposer,
-                onEdit: {
-                    if showComposer { endEditing() } else { beginEditing() }
-                },
-                onOpenAR: { showAR = true }
-            )
+            if !showComposer {
+                BackgroundChipStrip(
+                    selection: $background,
+                    customImage: $customImage,
+                    isFlipping: isFlipping,
+                    onSelect: flip
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            Spacer(minLength: 0)
 
             if !showComposer {
+                controlCapsule
+                    .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
+
                 PairingsStrip(family: family)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 16)
+        .padding(.top, 8)
+        .padding(.bottom, showComposer ? 4 : 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
         .contentShape(Rectangle())
         .onTapGesture { endEditing() }
+        // Same capsule, lifted above the keyboard while editing.
+        .safeAreaInset(edge: .bottom, spacing: 16) {
+            if showComposer {
+                controlCapsule
+                    .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
+            }
+        }
         .navigationTitle(family.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -89,66 +122,24 @@ struct FullScreenPreviewView: View {
         .sensoryFeedback(trigger: showComposer) { _, open in
             (hapticsEnabled && open) ? .impact(weight: .light) : nil
         }
-        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: showComposer)
+        .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showComposer)
     }
 
-    /// Always glyph `Text`s — never a TextField. Typing happens in the composer;
-    /// each new character springs in via `AnimatedSpecimenText`.
-    private var specimen: some View {
-        AnimatedSpecimenText(text: previewText, font: styledFont)
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity)
-            .scaleEffect(showComposer ? 1.04 : 1)
-            .shadow(
-                color: showComposer ? Color.fontiAmber.opacity(0.22) : .clear,
-                radius: showComposer ? 32 : 0
-            )
-            .animation(.spring(response: 0.42, dampingFraction: 0.78), value: showComposer)
-            .contentShape(Rectangle())
-            .onTapGesture { beginEditing() }
-            .accessibilityHint("Double tap to edit")
-            .accessibilityAddTraits(.isButton)
-            .sensoryFeedback(trigger: text.count) { old, new in
-                // Soft tick on each typed/deleted character while composing.
-                (hapticsEnabled && showComposer && old != new) ? .selection : nil
-            }
-    }
-
-    private var composer: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            TextField("", text: $text, axis: .vertical)
-                .lineLimit(1...4)
-                .font(.system(size: 17))
-                .foregroundStyle(Color.fontiCream)
-                .tint(Color.fontiAmber)
-                .textInputAutocapitalization(.sentences)
-                .submitLabel(.done)
-                .focused($composerFocused)
-                .onSubmit { endEditing() }
-                .overlay(alignment: .leading) {
-                    if text.isEmpty {
-                        Text("Your words.")
-                            .font(.system(size: 17).italic())
-                            .foregroundStyle(Color.fontiCream.opacity(0.35))
-                            .allowsHitTesting(false)
-                    }
-                }
-
-            Button {
-                endEditing()
-            } label: {
-                Image(systemName: "checkmark")
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 4)
-            }
-            .buttonStyle(.glass)
-            .tint(.fontiAmber)
-            .accessibilityLabel("Done editing")
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .glassEffect(in: .rect(cornerRadius: 22))
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+    private var controlCapsule: some View {
+        PreviewControls(
+            family: family,
+            size: $size,
+            isBold: $isBold,
+            isItalic: $isItalic,
+            text: $text,
+            shareSlot: shareSlot,
+            arEnabled: true,
+            isEditing: showComposer,
+            composerFocused: $composerFocused,
+            onEdit: { beginEditing() },
+            onDone: { endEditing() },
+            onOpenAR: { showAR = true }
+        )
     }
 
     private var styledFont: Font {
@@ -158,17 +149,51 @@ struct FullScreenPreviewView: View {
         return font
     }
 
+    // MARK: - Card flip
+
+    private func flip(to style: PreviewBackground) {
+        guard !isFlipping, style != background else { return }
+        if style == .custom, customImage == nil { return }
+
+        isFlipping = true
+        if hapticsEnabled {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        }
+
+        withAnimation(.easeInOut(duration: 0.28)) {
+            cardRotationY = 90
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+
+            var snap = Transaction()
+            snap.disablesAnimations = true
+            withTransaction(snap) {
+                background = style
+                cardRotationY = -90
+            }
+
+            withAnimation(.easeInOut(duration: 0.32)) {
+                cardRotationY = 0
+            }
+
+            try? await Task.sleep(for: .milliseconds(340))
+            isFlipping = false
+        }
+    }
+
     private func beginEditing() {
         guard !showComposer else {
             composerFocused = true
             return
         }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             showComposer = true
         }
         Task { @MainActor in
-            // Let the composer mount before claiming focus.
-            try? await Task.sleep(for: .milliseconds(40))
+            // Let the capsule morph before the keyboard arrives.
+            try? await Task.sleep(for: .milliseconds(120))
             composerFocused = true
         }
     }
@@ -176,7 +201,7 @@ struct FullScreenPreviewView: View {
     private func endEditing() {
         guard showComposer else { return }
         composerFocused = false
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             showComposer = false
         }
     }
@@ -188,7 +213,9 @@ struct FullScreenPreviewView: View {
             text: previewText,
             size: size,
             bold: isBold,
-            italic: isItalic
+            italic: isItalic,
+            background: background,
+            customImage: customImage
         ) {
             ShareLink(
                 item: Image(uiImage: image),
