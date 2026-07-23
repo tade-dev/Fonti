@@ -7,9 +7,11 @@ struct SavedFontsView: View {
 
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
+    @State private var arLaunch: InSpaceLaunch?
     @Namespace private var cardNamespace
 
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
+    @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -44,6 +46,15 @@ struct SavedFontsView: View {
             .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
                 (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
             }
+            .fullScreenCover(item: $arLaunch) { launch in
+                InSpaceView(
+                    text: launch.text,
+                    familyName: launch.familyName,
+                    initialSize: launch.size,
+                    bold: false,
+                    italic: false
+                )
+            }
         }
     }
 
@@ -56,12 +67,16 @@ struct SavedFontsView: View {
                         family: family,
                         isLifted: liftedFamilyId == family.id,
                         isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
-                        namespace: cardNamespace
+                        namespace: cardNamespace,
+                        onOpenAR: { openAR(family) }
                     )
                     .contentShape(Rectangle())
                     .onTapGesture { tapped(family) }
                     .transition(.scale.combined(with: .opacity))
                     .contextMenu {
+                        Button { openAR(family) } label: {
+                            Label("Place in Space", systemImage: "cube.transparent")
+                        }
                         Button(role: .destructive) { delete(entry) } label: {
                             Label("Remove", systemImage: "trash")
                         }
@@ -95,6 +110,14 @@ struct SavedFontsView: View {
         withAnimation(.snappy(duration: 0.25)) {
             modelContext.delete(entry)
         }
+    }
+
+    private func openAR(_ family: FontFamily) {
+        let trimmed = defaultSampleText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = trimmed.isEmpty ? family.displayName : trimmed
+        let stored = UserDefaults.standard.double(forKey: "fonti.defaultPreviewSize")
+        let size = stored == 0 ? 48 : CGFloat(stored)
+        arLaunch = InSpaceLaunch(familyName: family.id, text: text, size: size)
     }
 }
 

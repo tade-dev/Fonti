@@ -7,6 +7,8 @@ struct PreviewControls<Share: View>: View {
     @Binding var isItalic: Bool
     let shareSlot: Share
     let arEnabled: Bool
+    var isEditing: Bool = false
+    let onEdit: () -> Void
     let onOpenAR: () -> Void
 
     private var supportsBold: Bool { FontTraitSupport.supportsBold(family: family.id) }
@@ -27,12 +29,24 @@ struct PreviewControls<Share: View>: View {
                 toggle("I", isOn: $isItalic, enabled: supportsItalic)
                     .font(.system(size: 16).italic())
                 Spacer()
+                editButton
                 arButton
                 shareSlot
             }
         }
         .padding(16)
         .glassEffect(in: .rect(cornerRadius: 22))
+    }
+
+    private var editButton: some View {
+        Button(action: onEdit) {
+            Image(systemName: isEditing ? "checkmark" : "pencil")
+                .contentTransition(.symbolEffect(.replace))
+                .padding(.horizontal, 6)
+        }
+        .buttonStyle(.glass)
+        .tint(isEditing ? .fontiAmber : .fontiCream)
+        .accessibilityLabel(isEditing ? "Done editing" : "Edit preview text")
     }
 
     private var arButton: some View {

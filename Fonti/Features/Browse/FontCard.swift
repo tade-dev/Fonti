@@ -8,6 +8,7 @@ struct FontCard: View {
     let isDimmed: Bool
     let namespace: Namespace.ID
     let onTap: () -> Void
+    let onOpenAR: () -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Query private var matches: [SavedFont]
@@ -19,7 +20,8 @@ struct FontCard: View {
         isLifted: Bool,
         isDimmed: Bool,
         namespace: Namespace.ID,
-        onTap: @escaping () -> Void
+        onTap: @escaping () -> Void,
+        onOpenAR: @escaping () -> Void
     ) {
         self.family = family
         self.displayText = displayText
@@ -27,6 +29,7 @@ struct FontCard: View {
         self.isDimmed = isDimmed
         self.namespace = namespace
         self.onTap = onTap
+        self.onOpenAR = onOpenAR
         let name = family.id
         _matches = Query(
             filter: #Predicate<SavedFont> { $0.familyName == name }
@@ -58,6 +61,17 @@ struct FontCard: View {
                     .tracking(1.2)
                     .foregroundStyle(Color.fontiCream.opacity(0.65))
                 Spacer()
+                Button {
+                    onOpenAR()
+                    if hapticsEnabled {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                } label: {
+                    Image(systemName: "cube.transparent")
+                        .foregroundStyle(Color.fontiCream.opacity(0.65))
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel("Place in Space")
                 Button(action: toggleSaved) {
                     Image(systemName: isSaved ? "heart.fill" : "heart")
                         .foregroundStyle(isSaved ? Color.fontiAmber : Color.fontiCream.opacity(0.65))
@@ -105,7 +119,8 @@ struct FontCard: View {
             isLifted: false,
             isDimmed: false,
             namespace: ns,
-            onTap: {}
+            onTap: {},
+            onOpenAR: {}
         )
         .padding()
     }
