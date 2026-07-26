@@ -44,15 +44,15 @@ struct FullScreenPreviewView: View {
                 background: background,
                 customImage: customImage,
                 rotationY: cardRotationY,
-                compact: showComposer
+                isFlipping: isFlipping,
+                compact: showComposer,
+                onTap: { beginEditing() }
             ) {
                 AnimatedSpecimenText(
                     text: previewText,
                     font: styledFont,
                     color: background.glyphColor
                 )
-                .contentShape(Rectangle())
-                .onTapGesture { beginEditing() }
                 .accessibilityHint("Double tap to edit")
                 .accessibilityAddTraits(.isButton)
             }

@@ -2,9 +2,6 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
-/// Horizontal strip of background thumbnails. Tapping flips the specimen card;
-/// the Photo chip opens the system picker when no image is set yet (or on
-/// a second intentional pick via long-press).
 struct BackgroundChipStrip: View {
     @Binding var selection: PreviewBackground
     @Binding var customImage: UIImage?
