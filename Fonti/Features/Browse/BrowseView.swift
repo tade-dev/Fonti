@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 
 struct BrowseView: View {
+    @Binding var tabBarProgress: CGFloat
+    @Binding var hideFloatingTabBar: Bool
+
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
@@ -13,6 +16,14 @@ struct BrowseView: View {
 
     @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
     @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
+
+    init(
+        tabBarProgress: Binding<CGFloat> = .constant(0),
+        hideFloatingTabBar: Binding<Bool> = .constant(false)
+    ) {
+        _tabBarProgress = tabBarProgress
+        _hideFloatingTabBar = hideFloatingTabBar
+    }
 
     private var allFonts: [FontFamily] {
         // Core Text registration makes imported fonts also appear in
@@ -55,6 +66,7 @@ struct BrowseView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            .adoptForIGTabBar($tabBarProgress)
             .scrollDismissesKeyboard(.immediately)
             .background(Color.fontiInk.ignoresSafeArea())
             .dismissKeyboardOnBackgroundTap()
@@ -73,6 +85,7 @@ struct BrowseView: View {
                 )
             }
             .onChange(of: path) { _, newPath in
+                hideFloatingTabBar = !newPath.isEmpty
                 if newPath.isEmpty {
                     withAnimation(.easeOut(duration: 0.25)) {
                         liftedFamilyId = nil

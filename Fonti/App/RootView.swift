@@ -4,32 +4,55 @@ import SwiftData
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
 
-    // Light/System modes are intentionally disabled — Fonti is dark-only for v1.
-    // Re-enable by uncommenting the AppStorage above and reading appearance.colorScheme
-    // below, and unhiding the Appearance section in SettingsView.
-    // @AppStorage("fonti.appearance") private var appearance: AppAppearance = .dark
+    @State private var activeTab: FontiTab = .browse
+    @State private var progress: CGFloat = 0
+    @State private var hideFloatingTabBar = false
 
     var body: some View {
-        TabView {
-            // Browse and Saved own their own NavigationStack so they can
-            // manage a typed [FontFamily] path (lets pair-chip taps in the
-            // Preview push more previews through a single destination).
-            Tab("Browse", systemImage: "textformat") {
-                BrowseView()
+        TabView(selection: $activeTab) {
+            
+            Tab(value: .browse) {
+                BrowseView(tabBarProgress: $progress, hideFloatingTabBar: $hideFloatingTabBar)
             }
-            Tab("Saved", systemImage: "heart") {
-                SavedFontsView()
+
+            Tab(value: .saved) {
+                SavedFontsView(tabBarProgress: $progress, hideFloatingTabBar: $hideFloatingTabBar)
             }
-            Tab("Settings", systemImage: "gear") {
-                NavigationStack { SettingsView() }
+
+            Tab(value: .settings) {
+                NavigationStack {
+                    SettingsView()
+                        .hideNativeTabBar()
+                }
+            }
+
+        }
+        .preferredColorScheme(.dark)
+        .overlay {
+            if !hideFloatingTabBar {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    IGStyleTabBar(selection: $activeTab) { tab in
+                        let image = UIImage(systemName: tab.symbolImage)?
+                            .withConfiguration(UIImage.SymbolConfiguration(font: .systemFont(ofSize: 20)))
+                        return image!
+                    } onInteraction: {
+                        if progress != 0 {
+                            withAnimation(.smooth(duration: 0.45)) {
+                                progress = 0
+                            }
+                        }
+                    }
+                    .padding(4)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .scaleEffect(1 - (progress * 0.15), anchor: .bottom)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 22)
+                }
+                .ignoresSafeArea(.container, edges: .bottom)
             }
         }
-        .tint(.fontiAmber)
-        .preferredColorScheme(.dark)
-        .tabBarMinimizeBehavior(.onScrollDown)
         .task {
-            // Register every persisted ImportedFont with Core Text once at
-            // launch. CTFont registration doesn't survive across app launches.
             let imports = (try? modelContext.fetch(FetchDescriptor<ImportedFont>())) ?? []
             CustomFontManager.registerAll(imports)
         }

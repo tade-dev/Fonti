@@ -12,6 +12,7 @@ struct FullScreenPreviewView: View {
     @State private var isItalic: Bool = false
     @State private var showAR: Bool = false
     @State private var showComposer: Bool = false
+    @State private var compareSession: CompareSession?
     @FocusState private var composerFocused: Bool
 
     @State private var background: PreviewBackground = .ink
@@ -39,63 +40,63 @@ struct FullScreenPreviewView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            SpecimenCard(
-                background: background,
-                customImage: customImage,
-                rotationY: cardRotationY,
-                isFlipping: isFlipping,
-                compact: showComposer,
-                onTap: { beginEditing() }
-            ) {
-                AnimatedSpecimenText(
-                    text: previewText,
-                    font: styledFont,
-                    color: background.glyphColor
-                )
-                .accessibilityHint("Double tap to edit")
-                .accessibilityAddTraits(.isButton)
-            }
-            .frame(maxHeight: showComposer ? 240 : .infinity)
-            .layoutPriority(1)
-            .sensoryFeedback(trigger: text.count) { old, new in
-                (hapticsEnabled && showComposer && old != new) ? .selection : nil
-            }
-
-            if !showComposer {
-                BackgroundChipStrip(
-                    selection: $background,
-                    customImage: $customImage,
+        GeometryReader { geo in
+            VStack(spacing: 12) {
+                SpecimenCard(
+                    background: background,
+                    customImage: customImage,
+                    rotationY: cardRotationY,
                     isFlipping: isFlipping,
-                    onSelect: flip
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                    compact: showComposer,
+                    onTap: { beginEditing() }
+                ) {
+                    AnimatedSpecimenText(
+                        text: previewText,
+                        font: styledFont,
+                        color: background.glyphColor
+                    )
+                    .accessibilityHint("Double tap to edit")
+                    .accessibilityAddTraits(.isButton)
+                }
+                .frame(maxHeight: showComposer ? geo.size.height * 0.36 : geo.size.height * 0.46)
+                .sensoryFeedback(trigger: text.count) { old, new in
+                    (hapticsEnabled && showComposer && old != new) ? .selection : nil
+                }
+
+                if !showComposer {
+                    BackgroundChipStrip(
+                        selection: $background,
+                        customImage: $customImage,
+                        isFlipping: isFlipping,
+                        onSelect: flip
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                Spacer(minLength: 0)
+
+                if !showComposer {
+                    controlCapsule
+                        .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
+
+                    PairingsStrip(family: family)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
             }
-
-            Spacer(minLength: 0)
-
-            if !showComposer {
-                controlCapsule
-                    .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
-
-                PairingsStrip(family: family)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .padding(.bottom, showComposer ? 4 : 12)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, showComposer ? 4 : 16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
         .contentShape(Rectangle())
         .onTapGesture { endEditing() }
-        // Same capsule, lifted above the keyboard while editing.
-        .safeAreaInset(edge: .bottom, spacing: 16) {
+        .safeAreaInset(edge: .bottom, spacing: 12) {
             if showComposer {
                 controlCapsule
                     .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 14)
+                    .padding(.bottom, 10)
             }
         }
         .navigationTitle(family.displayName)
@@ -107,7 +108,7 @@ struct FullScreenPreviewView: View {
                     .foregroundStyle(Color.fontiCream)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                    .accessibilityHidden(true) // navigationTitle already announces this
+                    .accessibilityHidden(true)
             }
         }
         .fullScreenCover(isPresented: $showAR) {
@@ -118,6 +119,9 @@ struct FullScreenPreviewView: View {
                 bold: isBold,
                 italic: isItalic
             )
+        }
+        .fullScreenCover(item: $compareSession) { session in
+            CompareView(session: session)
         }
         .sensoryFeedback(trigger: showComposer) { _, open in
             (hapticsEnabled && open) ? .impact(weight: .light) : nil
@@ -138,7 +142,10 @@ struct FullScreenPreviewView: View {
             composerFocused: $composerFocused,
             onEdit: { beginEditing() },
             onDone: { endEditing() },
-            onOpenAR: { showAR = true }
+            onOpenAR: { showAR = true },
+            onCompare: {
+                compareSession = CompareSession.make(from: family, text: previewText)
+            }
         )
     }
 
@@ -192,7 +199,6 @@ struct FullScreenPreviewView: View {
             showComposer = true
         }
         Task { @MainActor in
-            // Let the capsule morph before the keyboard arrives.
             try? await Task.sleep(for: .milliseconds(120))
             composerFocused = true
         }
@@ -221,14 +227,8 @@ struct FullScreenPreviewView: View {
                 item: Image(uiImage: image),
                 preview: SharePreview("Fonti — \(family.displayName)", image: Image(uiImage: image))
             ) {
-                Image(systemName: "square.and.arrow.up")
-                    .padding(.horizontal, 6)
+                Label("Share", systemImage: "square.and.arrow.up")
             }
-            .buttonStyle(.glass)
-            .tint(.fontiCream)
-            .accessibilityLabel("Share specimen image")
-        } else {
-            EmptyView()
         }
     }
 }

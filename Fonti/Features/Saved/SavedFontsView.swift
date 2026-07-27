@@ -5,6 +5,9 @@ struct SavedFontsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SavedFont.savedAt, order: .reverse) private var saved: [SavedFont]
 
+    @Binding var tabBarProgress: CGFloat
+    @Binding var hideFloatingTabBar: Bool
+
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
     @State private var arLaunch: InSpaceLaunch?
@@ -18,11 +21,21 @@ struct SavedFontsView: View {
         GridItem(.flexible(), spacing: 14)
     ]
 
+    init(
+        tabBarProgress: Binding<CGFloat> = .constant(0),
+        hideFloatingTabBar: Binding<Bool> = .constant(false)
+    ) {
+        _tabBarProgress = tabBarProgress
+        _hideFloatingTabBar = hideFloatingTabBar
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             Group {
                 if saved.isEmpty {
                     emptyState
+                        .hideNativeTabBar()
+                        .safeAreaPadding(.bottom, 50)
                 } else {
                     grid
                 }
@@ -37,6 +50,7 @@ struct SavedFontsView: View {
                     .environment(\.cardNamespace, cardNamespace)
             }
             .onChange(of: path) { _, newPath in
+                hideFloatingTabBar = !newPath.isEmpty
                 if newPath.isEmpty {
                     withAnimation(.easeOut(duration: 0.25)) {
                         liftedFamilyId = nil
@@ -86,6 +100,7 @@ struct SavedFontsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
         }
+        .adoptForIGTabBar($tabBarProgress)
     }
 
     private var emptyState: some View {

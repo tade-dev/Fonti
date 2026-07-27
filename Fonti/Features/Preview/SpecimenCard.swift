@@ -74,7 +74,8 @@ struct SpecimenCard<Content: View>: View {
             .scaleEffect(isDragging && !isFlipping ? 0.985 : 1)
             .gesture(tiltGesture(in: size))
         }
-        .aspectRatio(compact ? 1.35 : 1.05, contentMode: .fit)
+        // Slightly wider than tall so the board doesn’t dominate the screen.
+        .aspectRatio(compact ? 1.4 : 1.2, contentMode: .fit)
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.72), value: drag)
         .animation(.spring(response: 0.36, dampingFraction: 0.78), value: isDragging)
     }

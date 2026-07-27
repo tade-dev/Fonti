@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Glass control capsule that morphs into the text composer when editing.
+/// Idle row stays light: size, traits, edit + a ⋯ menu for the rest.
 struct PreviewControls<Share: View>: View {
     let family: FontFamily
     @Binding var size: CGFloat
@@ -14,6 +15,7 @@ struct PreviewControls<Share: View>: View {
     let onEdit: () -> Void
     let onDone: () -> Void
     let onOpenAR: () -> Void
+    var onCompare: (() -> Void)? = nil
 
     private var supportsBold: Bool { FontTraitSupport.supportsBold(family: family.id) }
     private var supportsItalic: Bool { FontTraitSupport.supportsItalic(family: family.id) }
@@ -39,7 +41,7 @@ struct PreviewControls<Share: View>: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, isEditing ? 14 : 16)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(in: .rect(cornerRadius: 22))
         .animation(.spring(response: 0.42, dampingFraction: 0.86), value: isEditing)
@@ -48,7 +50,7 @@ struct PreviewControls<Share: View>: View {
     // MARK: - Idle controls
 
     private var controlsColumn: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             HStack {
                 Text("12").font(.caption).foregroundStyle(Color.fontiCream.opacity(0.6))
                 Slider(value: $size, in: 12...96)
@@ -63,8 +65,7 @@ struct PreviewControls<Share: View>: View {
                     .font(.system(size: 16).italic())
                 Spacer()
                 editButton
-                arButton
-                shareSlot
+                moreMenu
             }
         }
     }
@@ -114,19 +115,33 @@ struct PreviewControls<Share: View>: View {
         .accessibilityLabel("Edit preview text")
     }
 
-    private var arButton: some View {
-        Button {
-            onOpenAR()
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    private var moreMenu: some View {
+        Menu {
+            if let onCompare {
+                Button {
+                    onCompare()
+                } label: {
+                    Label("Compare", systemImage: "rectangle.split.2x1")
+                }
+            }
+            Button {
+                onOpenAR()
+            } label: {
+                Label("In Space", systemImage: "cube.transparent")
+            }
+            .disabled(!arEnabled)
+
+            Divider()
+
+            shareSlot
         } label: {
-            Image(systemName: "cube.transparent")
+            Image(systemName: "ellipsis")
                 .padding(.horizontal, 6)
+                .padding(.vertical, 4)
         }
         .buttonStyle(.glass)
         .tint(.fontiCream)
-        .disabled(!arEnabled)
-        .opacity(arEnabled ? 1 : 0.35)
-        .accessibilityLabel("Place in AR")
+        .accessibilityLabel("More")
     }
 
     private func toggle(_ label: String, isOn: Binding<Bool>, enabled: Bool) -> some View {
