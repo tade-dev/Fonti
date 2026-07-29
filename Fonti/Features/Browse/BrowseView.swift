@@ -9,7 +9,6 @@ struct BrowseView: View {
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
     @State private var didAppear = false
-    @State private var arLaunch: InSpaceLaunch?
     @Namespace private var cardNamespace
 
     @Query(sort: \ImportedFont.familyName) private var imports: [ImportedFont]
@@ -50,8 +49,7 @@ struct BrowseView: View {
                             isLifted: liftedFamilyId == family.id,
                             isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
                             namespace: cardNamespace,
-                            onTap: { tapped(family) },
-                            onOpenAR: { openAR(family) }
+                            onTap: { tapped(family) }
                         )
                         .opacity(didAppear ? 1 : 0)
                         .blur(radius: didAppear ? 0 : 8)
@@ -74,15 +72,6 @@ struct BrowseView: View {
                 FullScreenPreviewView(family: family, initialText: model.input)
                     .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
                     .environment(\.cardNamespace, cardNamespace)
-            }
-            .fullScreenCover(item: $arLaunch) { launch in
-                InSpaceView(
-                    text: launch.text,
-                    familyName: launch.familyName,
-                    initialSize: launch.size,
-                    bold: false,
-                    italic: false
-                )
             }
             .onChange(of: path) { _, newPath in
                 hideFloatingTabBar = !newPath.isEmpty
@@ -145,21 +134,6 @@ struct BrowseView: View {
             path.append(family)
         }
     }
-
-    private func openAR(_ family: FontFamily) {
-        let text = model.displayText(for: family, fallback: defaultSampleText)
-        let stored = UserDefaults.standard.double(forKey: "fonti.defaultPreviewSize")
-        let size = stored == 0 ? 48 : CGFloat(stored)
-        arLaunch = InSpaceLaunch(familyName: family.id, text: text, size: size)
-    }
-}
-
-/// Shared launch payload for jumping straight into In Space from a card.
-struct InSpaceLaunch: Identifiable {
-    let id = UUID()
-    let familyName: String
-    let text: String
-    let size: CGFloat
 }
 
 #Preview {

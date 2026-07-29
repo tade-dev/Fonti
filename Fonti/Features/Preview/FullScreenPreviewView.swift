@@ -10,7 +10,6 @@ struct FullScreenPreviewView: View {
     @State private var size: CGFloat
     @State private var isBold: Bool = false
     @State private var isItalic: Bool = false
-    @State private var showAR: Bool = false
     @State private var showComposer: Bool = false
     @State private var compareSession: CompareSession?
     @FocusState private var composerFocused: Bool
@@ -20,16 +19,27 @@ struct FullScreenPreviewView: View {
     @State private var cardRotationY: Double = 0
     @State private var isFlipping = false
 
-    @Namespace private var capsuleNamespace
+    /// Point size actually drawn — snapped while text is hidden.
+    @State private var livePointSize: CGFloat
+    /// Per-glyph springs only while typing — off during morph.
+    @State private var glyphAnimationEnabled = false
+    /// Specimen glyphs hide for the morph, then fade back in.
+    @State private var specimenTextOpacity: Double = 1
+    @State private var isMorphing = false
 
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
+
+    private let morphSpring = Animation.spring(response: 0.48, dampingFraction: 0.88)
+    private let textFade = Animation.easeInOut(duration: 0.16)
 
     init(family: FontFamily, initialText: String) {
         self.family = family
         self.initialText = initialText
         _text = State(initialValue: initialText)
         let stored = UserDefaults.standard.double(forKey: "fonti.defaultPreviewSize")
-        _size = State(initialValue: stored == 0 ? 48 : CGFloat(stored))
+        let initialSize = stored == 0 ? 48 : CGFloat(stored)
+        _size = State(initialValue: initialSize)
+        _livePointSize = State(initialValue: initialSize)
     }
 
     /// Empty field falls back to the font's own name so the specimen
@@ -50,18 +60,28 @@ struct FullScreenPreviewView: View {
                     compact: showComposer,
                     onTap: { beginEditing() }
                 ) {
-                    AnimatedSpecimenText(
-                        text: previewText,
-                        font: styledFont,
-                        color: background.glyphColor
-                    )
-                    .accessibilityHint("Double tap to edit")
-                    .accessibilityAddTraits(.isButton)
+                    VStack(spacing: showComposer ? 8 : 0) {
+                        AnimatedSpecimenText(
+                            text: previewText,
+                            font: styledFont(size: livePointSize),
+                            color: background.glyphColor,
+                            animates: glyphAnimationEnabled
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityHint("Double tap to edit")
+                        .accessibilityAddTraits(.isButton)
+
+                        if showComposer {
+                            Text(family.displayName)
+                                .font(.caption2.weight(.medium))
+                                .tracking(0.6)
+                                .foregroundStyle(background.secondaryGlyphColor)
+                                .transition(.opacity)
+                        }
+                    }
+                    .opacity(specimenTextOpacity)
                 }
-                .frame(maxHeight: showComposer ? geo.size.height * 0.36 : geo.size.height * 0.46)
-                .sensoryFeedback(trigger: text.count) { old, new in
-                    (hapticsEnabled && showComposer && old != new) ? .selection : nil
-                }
+                .frame(maxHeight: showComposer ? 132 : geo.size.height * 0.46)
 
                 if !showComposer {
                     BackgroundChipStrip(
@@ -70,35 +90,40 @@ struct FullScreenPreviewView: View {
                         isFlipping: isFlipping,
                         onSelect: flip
                     )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
                 }
 
                 Spacer(minLength: 0)
+                    .contentShape(Rectangle())
+                    .onTapGesture { endEditing() }
 
                 if !showComposer {
-                    controlCapsule
-                        .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
-
                     PairingsStrip(family: family)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .transition(.opacity)
                 }
+
+                PreviewControls(
+                    family: family,
+                    size: $size,
+                    isBold: $isBold,
+                    isItalic: $isItalic,
+                    text: $text,
+                    shareSlot: shareSlot,
+                    isEditing: showComposer,
+                    composerFocused: $composerFocused,
+                    onEdit: { beginEditing() },
+                    onDone: { endEditing() },
+                    onCompare: {
+                        compareSession = CompareSession.make(from: family, text: previewText)
+                    }
+                )
             }
             .padding(.horizontal, 16)
             .padding(.top, 4)
-            .padding(.bottom, showComposer ? 4 : 12)
-            .frame(width: geo.size.width, height: geo.size.height)
+            .padding(.bottom, 12)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
         .background(Color.fontiInk.ignoresSafeArea())
-        .contentShape(Rectangle())
-        .onTapGesture { endEditing() }
-        .safeAreaInset(edge: .bottom, spacing: 12) {
-            if showComposer {
-                controlCapsule
-                    .matchedGeometryEffect(id: "previewCapsule", in: capsuleNamespace)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
-            }
-        }
         .navigationTitle(family.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -111,49 +136,35 @@ struct FullScreenPreviewView: View {
                     .accessibilityHidden(true)
             }
         }
-        .fullScreenCover(isPresented: $showAR) {
-            InSpaceView(
-                text: previewText,
-                familyName: family.id,
-                initialSize: size,
-                bold: isBold,
-                italic: isItalic
-            )
-        }
         .fullScreenCover(item: $compareSession) { session in
             CompareView(session: session)
         }
         .sensoryFeedback(trigger: showComposer) { _, open in
             (hapticsEnabled && open) ? .impact(weight: .light) : nil
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showComposer)
+        .sensoryFeedback(trigger: text.count) { old, new in
+            (hapticsEnabled && showComposer && old != new) ? .selection : nil
+        }
+        .onChange(of: size) { _, newSize in
+            guard !showComposer else { return }
+            snapPointSize(newSize)
+        }
     }
 
-    private var controlCapsule: some View {
-        PreviewControls(
-            family: family,
-            size: $size,
-            isBold: $isBold,
-            isItalic: $isItalic,
-            text: $text,
-            shareSlot: shareSlot,
-            arEnabled: true,
-            isEditing: showComposer,
-            composerFocused: $composerFocused,
-            onEdit: { beginEditing() },
-            onDone: { endEditing() },
-            onOpenAR: { showAR = true },
-            onCompare: {
-                compareSession = CompareSession.make(from: family, text: previewText)
-            }
-        )
-    }
-
-    private var styledFont: Font {
+    private func styledFont(size: CGFloat) -> Font {
         var font = Font.custom(family.id, size: size)
         if isBold { font = font.bold() }
         if isItalic { font = font.italic() }
         return font
+    }
+
+    /// Instant size change — never under a morph spring.
+    private func snapPointSize(_ value: CGFloat) {
+        var snap = Transaction()
+        snap.disablesAnimations = true
+        withTransaction(snap) {
+            livePointSize = value
+        }
     }
 
     // MARK: - Card flip
@@ -195,20 +206,49 @@ struct FullScreenPreviewView: View {
             composerFocused = true
             return
         }
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-            showComposer = true
-        }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(120))
-            composerFocused = true
-        }
+        guard !isMorphing else { return }
+        runMorph(toEditing: true)
     }
 
     private func endEditing() {
-        guard showComposer else { return }
+        guard showComposer, !isMorphing else { return }
         composerFocused = false
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-            showComposer = false
+        runMorph(toEditing: false)
+    }
+
+    /// Fade text out → morph layout → snap size → fade text back in.
+    private func runMorph(toEditing: Bool) {
+        isMorphing = true
+        glyphAnimationEnabled = false
+
+        withAnimation(textFade) {
+            specimenTextOpacity = 0
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(160))
+
+            // Size change while invisible — no visible reflow.
+            snapPointSize(toEditing ? min(size, 34) : size)
+
+            withAnimation(morphSpring) {
+                showComposer = toEditing
+            }
+
+            try? await Task.sleep(for: .milliseconds(360))
+
+            withAnimation(textFade) {
+                specimenTextOpacity = 1
+            }
+
+            if toEditing {
+                composerFocused = true
+                // Let the fade finish before keystroke springs arm.
+                try? await Task.sleep(for: .milliseconds(120))
+                glyphAnimationEnabled = true
+            }
+
+            isMorphing = false
         }
     }
 

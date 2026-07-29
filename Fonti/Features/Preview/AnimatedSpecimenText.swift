@@ -6,8 +6,10 @@ struct AnimatedSpecimenText: View {
     let text: String
     let font: Font
     var color: Color = .fontiCream
+    /// When false, glyphs lay out instantly — use during morph / first paint.
+    var animates: Bool = true
 
-    @State private var allowsAnimation = false
+    @State private var appeared = false
 
     private struct Glyph: Identifiable, Hashable {
         let id: Int
@@ -18,22 +20,33 @@ struct AnimatedSpecimenText: View {
         text.enumerated().map { Glyph(id: $0.offset, character: $0.element) }
     }
 
+    private var springsLive: Bool { animates && appeared }
+
     var body: some View {
         GlyphFlow(lineSpacing: 4) {
             ForEach(glyphs) { glyph in
                 glyphView(glyph)
             }
         }
+        // Only key off text — never inherit card morph springs (that scatters glyphs).
         .animation(
-            allowsAnimation
-                ? .spring(response: 0.36, dampingFraction: 0.58)
-                : nil,
+            springsLive ? .spring(response: 0.36, dampingFraction: 0.62) : nil,
             value: text
         )
-        .task {
-            // Skip the waterfall on first appear — only animate real edits.
-            try? await Task.sleep(for: .milliseconds(60))
-            allowsAnimation = true
+        .transaction { txn in
+            if !springsLive {
+                txn.animation = nil
+            }
+        }
+        .task(id: animates) {
+            guard animates else {
+                appeared = false
+                return
+            }
+            // Skip waterfall on enable — only animate subsequent keystrokes.
+            appeared = false
+            try? await Task.sleep(for: .milliseconds(80))
+            appeared = true
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text)
@@ -47,16 +60,20 @@ struct AnimatedSpecimenText: View {
             .foregroundStyle(isNewline ? .clear : color)
             .frame(width: isNewline ? 0 : nil, height: isNewline ? 0 : nil)
             .layoutValue(key: GlyphCharacterKey.self, value: glyph.character)
-            .transition(.asymmetric(
-                insertion: .modifier(
-                    active: GlyphAppear(progress: 0),
-                    identity: GlyphAppear(progress: 1)
-                ),
-                removal: .modifier(
-                    active: GlyphAppear(progress: 0),
-                    identity: GlyphAppear(progress: 1)
-                )
-            ))
+            .transition(springsLive ? glyphSpring : .identity)
+    }
+
+    private var glyphSpring: AnyTransition {
+        .asymmetric(
+            insertion: .modifier(
+                active: GlyphAppear(progress: 0),
+                identity: GlyphAppear(progress: 1)
+            ),
+            removal: .modifier(
+                active: GlyphAppear(progress: 0),
+                identity: GlyphAppear(progress: 1)
+            )
+        )
     }
 }
 

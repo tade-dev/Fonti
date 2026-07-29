@@ -18,7 +18,7 @@ struct SpecimenCard<Content: View>: View {
     @State private var drag: CGSize = .zero
     @State private var isDragging = false
 
-    private let corner: CGFloat = 28
+    private var corner: CGFloat { compact ? 22 : 28 }
     private let maxTilt: Double = 14
 
     var body: some View {
@@ -34,8 +34,8 @@ struct SpecimenCard<Content: View>: View {
                 }
 
                 content()
-                    .padding(.horizontal, compact ? 20 : 28)
-                    .padding(.vertical, compact ? 24 : 36)
+                    .padding(.horizontal, compact ? 16 : 28)
+                    .padding(.vertical, compact ? 12 : 36)
 
                 // Soft glare that tracks the finger — sells the “physical” surface.
                 glare(in: size)
@@ -71,11 +71,11 @@ struct SpecimenCard<Content: View>: View {
                 axis: (x: 0, y: 1, z: 0),
                 perspective: 0.55
             )
-            .scaleEffect(isDragging && !isFlipping ? 0.985 : 1)
-            .gesture(tiltGesture(in: size))
+            .scaleEffect(isDragging && !isFlipping && !compact ? 0.985 : 1)
+            .gesture(compact ? nil : tiltGesture(in: size))
         }
-        // Slightly wider than tall so the board doesn’t dominate the screen.
-        .aspectRatio(compact ? 1.4 : 1.2, contentMode: .fit)
+        // Idle: board aspect. Editing: short strip that leaves room for the keyboard.
+        .modifier(SpecimenCardSizing(compact: compact))
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.72), value: drag)
         .animation(.spring(response: 0.36, dampingFraction: 0.78), value: isDragging)
     }
@@ -145,6 +145,17 @@ struct SpecimenCard<Content: View>: View {
                     onTap?()
                 }
             }
+    }
+}
+
+private struct SpecimenCardSizing: ViewModifier {
+    let compact: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity)
+            .aspectRatio(compact ? 2.55 : 1.2, contentMode: .fit)
+            .frame(maxHeight: compact ? 132 : .infinity)
     }
 }
 

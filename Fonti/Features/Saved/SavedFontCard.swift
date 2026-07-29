@@ -5,9 +5,6 @@ struct SavedFontCard: View {
     let isLifted: Bool
     let isDimmed: Bool
     let namespace: Namespace.ID
-    let onOpenAR: () -> Void
-
-    @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -24,25 +21,10 @@ struct SavedFontCard: View {
 
             Spacer(minLength: 0)
 
-            HStack(spacing: 6) {
-                Text(family.displayName.uppercased())
-                    .font(.caption2)
-                    .tracking(1.2)
-                    .foregroundStyle(Color.fontiCream.opacity(0.55))
-                Spacer(minLength: 0)
-                Button {
-                    onOpenAR()
-                    if hapticsEnabled {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    }
-                } label: {
-                    Image(systemName: "cube.transparent")
-                        .font(.caption)
-                        .foregroundStyle(Color.fontiCream.opacity(0.65))
-                }
-                .buttonStyle(.glass)
-                .accessibilityLabel("Place in Space")
-            }
+            Text(family.displayName.uppercased())
+                .font(.caption2)
+                .tracking(1.2)
+                .foregroundStyle(Color.fontiCream.opacity(0.55))
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
@@ -60,8 +42,7 @@ struct SavedFontCard: View {
             family: FontFamily(id: "Georgia", displayName: "Georgia"),
             isLifted: false,
             isDimmed: false,
-            namespace: ns,
-            onOpenAR: {}
+            namespace: ns
         )
         .padding()
     }

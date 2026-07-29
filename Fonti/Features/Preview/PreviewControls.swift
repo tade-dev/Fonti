@@ -1,7 +1,6 @@
 import SwiftUI
 
 /// Glass control capsule that morphs into the text composer when editing.
-/// Idle row stays light: size, traits, edit + a ⋯ menu for the rest.
 struct PreviewControls<Share: View>: View {
     let family: FontFamily
     @Binding var size: CGFloat
@@ -9,12 +8,10 @@ struct PreviewControls<Share: View>: View {
     @Binding var isItalic: Bool
     @Binding var text: String
     let shareSlot: Share
-    let arEnabled: Bool
     let isEditing: Bool
     var composerFocused: FocusState<Bool>.Binding
     let onEdit: () -> Void
     let onDone: () -> Void
-    let onOpenAR: () -> Void
     var onCompare: (() -> Void)? = nil
 
     private var supportsBold: Bool { FontTraitSupport.supportsBold(family: family.id) }
@@ -23,28 +20,27 @@ struct PreviewControls<Share: View>: View {
     var body: some View {
         Group {
             if isEditing {
-                composerRow
+                composerColumn
                     .transition(
                         .asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                            removal: .opacity.combined(with: .scale(scale: 1.02))
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)),
+                            removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom))
                         )
                     )
             } else {
                 controlsColumn
                     .transition(
                         .asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                            removal: .opacity.combined(with: .scale(scale: 0.96))
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)),
+                            removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom))
                         )
                     )
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, isEditing ? 18 : 16)
+        .padding(.vertical, isEditing ? 16 : 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(in: .rect(cornerRadius: 22))
-        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: isEditing)
     }
 
     // MARK: - Idle controls
@@ -70,37 +66,47 @@ struct PreviewControls<Share: View>: View {
         }
     }
 
-    // MARK: - Composer (same capsule)
+    // MARK: - Composer (same glass shell)
 
-    private var composerRow: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            TextField("", text: $text, axis: .vertical)
-                .lineLimit(1...3)
-                .font(.system(size: 17))
-                .foregroundStyle(Color.fontiCream)
-                .tint(Color.fontiAmber)
-                .textInputAutocapitalization(.sentences)
-                .submitLabel(.done)
-                .focused(composerFocused)
-                .onSubmit { onDone() }
-                .overlay(alignment: .leading) {
-                    if text.isEmpty {
-                        Text("Your words.")
-                            .font(.system(size: 17).italic())
-                            .foregroundStyle(Color.fontiCream.opacity(0.35))
-                            .allowsHitTesting(false)
+    private var composerColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Your words")
+                .font(.caption2.weight(.semibold))
+                .tracking(1.1)
+                .textCase(.uppercase)
+                .foregroundStyle(Color.fontiCream.opacity(0.45))
+
+            HStack(alignment: .bottom, spacing: 12) {
+                TextField("", text: $text, axis: .vertical)
+                    .lineLimit(2...5)
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.fontiCream)
+                    .tint(Color.fontiAmber)
+                    .textInputAutocapitalization(.sentences)
+                    .submitLabel(.done)
+                    .focused(composerFocused)
+                    .onSubmit { onDone() }
+                    .overlay(alignment: .topLeading) {
+                        if text.isEmpty {
+                            Text("Type anything…")
+                                .font(.system(size: 18).italic())
+                                .foregroundStyle(Color.fontiCream.opacity(0.32))
+                                .allowsHitTesting(false)
+                                .padding(.top, 1)
+                        }
                     }
-                }
 
-            Button(action: onDone) {
-                Image(systemName: "checkmark")
-                    .fontWeight(.semibold)
-                    .contentTransition(.symbolEffect(.replace))
-                    .padding(.horizontal, 4)
+                Button(action: onDone) {
+                    Image(systemName: "checkmark")
+                        .fontWeight(.semibold)
+                        .contentTransition(.symbolEffect(.replace))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.glass)
+                .tint(.fontiAmber)
+                .accessibilityLabel("Done editing")
             }
-            .buttonStyle(.glass)
-            .tint(.fontiAmber)
-            .accessibilityLabel("Done editing")
         }
     }
 
@@ -123,15 +129,9 @@ struct PreviewControls<Share: View>: View {
                 } label: {
                     Label("Compare", systemImage: "rectangle.split.2x1")
                 }
-            }
-            Button {
-                onOpenAR()
-            } label: {
-                Label("In Space", systemImage: "cube.transparent")
-            }
-            .disabled(!arEnabled)
 
-            Divider()
+                Divider()
+            }
 
             shareSlot
         } label: {
