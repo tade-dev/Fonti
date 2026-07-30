@@ -37,6 +37,9 @@ struct FontiApp: App {
                 }
             }
             .preferredColorScheme(.dark)
+            .onOpenURL { url in
+                DeepLinkRouter.handle(url)
+            }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 handleActive()

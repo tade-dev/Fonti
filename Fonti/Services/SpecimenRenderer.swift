@@ -9,9 +9,14 @@ private struct SpecimenView: View {
     let italic: Bool
     let background: PreviewBackground
     let customImage: UIImage?
+    let template: SpecimenTemplate
+    let tracking: CGFloat
+    let leading: CGFloat
+
+    private var layoutSize: CGFloat { size * template.sizeMultiplier }
 
     private var font: Font {
-        var f = Font.custom(family, size: size)
+        var f = Font.custom(family, size: layoutSize)
         if bold { f = f.bold() }
         if italic { f = f.italic() }
         return f
@@ -25,7 +30,6 @@ private struct SpecimenView: View {
             background
                 .exportFill(customImage: customImage)
 
-            // FONTI wordmark, top-left
             VStack {
                 HStack {
                     Text("FONTI")
@@ -38,14 +42,22 @@ private struct SpecimenView: View {
             }
             .padding(48)
 
-            // User text, centred
-            Text(text.isEmpty ? family : text)
-                .font(font)
-                .foregroundStyle(glyph)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 80)
+            SpecimenLayoutView(
+                template: template,
+                text: text.isEmpty ? family : text,
+                familyName: family,
+                pointSize: layoutSize,
+                font: font,
+                color: glyph,
+                secondary: secondary,
+                animates: false,
+                compact: false,
+                tracking: tracking,
+                leading: leading
+            )
+            .padding(.horizontal, template == .body ? 72 : 80)
+            .padding(.vertical, 120)
 
-            // Family label, bottom
             VStack {
                 Spacer()
                 Text(family.uppercased())
@@ -69,7 +81,10 @@ enum SpecimenRenderer {
         bold: Bool,
         italic: Bool,
         background: PreviewBackground = .ink,
-        customImage: UIImage? = nil
+        customImage: UIImage? = nil,
+        template: SpecimenTemplate = .wordmark,
+        tracking: CGFloat = 0,
+        leading: CGFloat = 4
     ) -> UIImage? {
         let view = SpecimenView(
             family: family,
@@ -78,7 +93,10 @@ enum SpecimenRenderer {
             bold: bold,
             italic: italic,
             background: background,
-            customImage: customImage
+            customImage: customImage,
+            template: template,
+            tracking: tracking,
+            leading: leading
         )
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3

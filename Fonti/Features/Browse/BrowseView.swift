@@ -97,6 +97,10 @@ struct BrowseView: View {
                 guard !didAppear else { return }
                 try? await Task.sleep(for: .milliseconds(60))
                 didAppear = true
+                openPendingDeepLinkIfNeeded()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fontiConsumeDeepLink)) { _ in
+                openPendingDeepLinkIfNeeded()
             }
             .navigationTitle("Fonti")
             .navigationBarTitleDisplayMode(.inline)
@@ -131,6 +135,16 @@ struct BrowseView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
+            path.append(family)
+        }
+    }
+
+    private func openPendingDeepLinkIfNeeded() {
+        guard let name = DeepLinkRouter.consumePendingFamily() else { return }
+        let family = allFonts.first(where: { $0.id.caseInsensitiveCompare(name) == .orderedSame })
+            ?? FontFamily(id: name, displayName: name)
+        liftedFamilyId = family.id
+        if path.last?.id != family.id {
             path.append(family)
         }
     }

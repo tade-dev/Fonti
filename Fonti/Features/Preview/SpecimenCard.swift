@@ -1,9 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Specimen board that hosts the animated type. Background changes play as a
-/// Y-axis card flip — swap the fill at 90° so nothing shows through.
-/// Drag anywhere on the board for a physical 3D tilt (Wallet-card feel).
+
 struct SpecimenCard<Content: View>: View {
     let background: PreviewBackground
     let customImage: UIImage?
@@ -154,8 +152,8 @@ private struct SpecimenCardSizing: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity)
-            .aspectRatio(compact ? 2.55 : 1.2, contentMode: .fit)
-            .frame(maxHeight: compact ? 132 : .infinity)
+            .aspectRatio(compact ? 2.2 : 1.2, contentMode: .fit)
+            .frame(maxHeight: compact ? 148 : .infinity)
     }
 }
 

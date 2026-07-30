@@ -8,6 +8,8 @@ struct AnimatedSpecimenText: View {
     var color: Color = .fontiCream
     /// When false, glyphs lay out instantly — use during morph / first paint.
     var animates: Bool = true
+    var tracking: CGFloat = 0
+    var lineSpacing: CGFloat = 4
 
     @State private var appeared = false
 
@@ -23,27 +25,22 @@ struct AnimatedSpecimenText: View {
     private var springsLive: Bool { animates && appeared }
 
     var body: some View {
-        GlyphFlow(lineSpacing: 4) {
+        GlyphFlow(lineSpacing: lineSpacing, letterSpacing: tracking) {
             ForEach(glyphs) { glyph in
                 glyphView(glyph)
             }
         }
-        // Only key off text — never inherit card morph springs (that scatters glyphs).
         .animation(
             springsLive ? .spring(response: 0.36, dampingFraction: 0.62) : nil,
             value: text
         )
-        .transaction { txn in
-            if !springsLive {
-                txn.animation = nil
-            }
-        }
+        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: tracking)
+        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: lineSpacing)
         .task(id: animates) {
             guard animates else {
                 appeared = false
                 return
             }
-            // Skip waterfall on enable — only animate subsequent keystrokes.
             appeared = false
             try? await Task.sleep(for: .milliseconds(80))
             appeared = true
@@ -101,6 +98,7 @@ private struct GlyphCharacterKey: LayoutValueKey {
 
 private struct GlyphFlow: Layout {
     var lineSpacing: CGFloat = 4
+    var letterSpacing: CGFloat = 0
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
@@ -118,13 +116,16 @@ private struct GlyphFlow: Layout {
         for row in rows {
             let x0 = bounds.minX + max((bounds.width - row.width) / 2, 0)
             var x = x0
-            for index in row.indices {
+            for (i, index) in row.indices.enumerated() {
                 let size = subviews[index].sizeThatFits(.unspecified)
                 subviews[index].place(
                     at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
                     proposal: ProposedViewSize(size)
                 )
                 x += size.width
+                if i < row.indices.count - 1 {
+                    x += letterSpacing
+                }
             }
             y += row.height + lineSpacing
         }
@@ -157,11 +158,16 @@ private struct GlyphFlow: Layout {
             }
 
             let size = subview.sizeThatFits(.unspecified)
-            if !indices.isEmpty, width + size.width > maxWidth {
+            if !indices.isEmpty, width + size.width + letterSpacing > maxWidth {
                 flush()
             }
-            indices.append(index)
-            width += size.width
+            if indices.isEmpty {
+                indices.append(index)
+                width = size.width
+            } else {
+                indices.append(index)
+                width += size.width + letterSpacing
+            }
             height = max(height, size.height)
         }
         flush()
@@ -174,7 +180,9 @@ private struct GlyphFlow: Layout {
         Color.fontiInk.ignoresSafeArea()
         AnimatedSpecimenText(
             text: "Find your type.",
-            font: .custom("Georgia", size: 48)
+            font: .custom("Georgia", size: 48),
+            tracking: 4,
+            lineSpacing: 8
         )
         .padding()
     }

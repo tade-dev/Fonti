@@ -13,7 +13,8 @@ struct SettingsView: View {
     // @AppStorage("fonti.appearance")         private var appearance: AppAppearance = .dark
     @AppStorage("fonti.defaultSampleText")  private var defaultSampleText: String = ""
     @AppStorage("fonti.defaultPreviewSize") private var defaultPreviewSize: Double = 48
-    @AppStorage("fonti.hapticsEnabled")     private var hapticsEnabled: Bool = true
+    @AppStorage("fonti.hapticsEnabled")           private var hapticsEnabled: Bool = true
+    @AppStorage("fonti.typewriterHapticsEnabled") private var typewriterHapticsEnabled: Bool = true
 
     @State private var confirmClear = false
     @State private var showingImporter = false
@@ -141,8 +142,14 @@ struct SettingsView: View {
     }
 
     private var feedbackSection: some View {
-        Section("Feedback") {
+        Section {
             Toggle("Haptics", isOn: $hapticsEnabled)
+            Toggle("Typewriter", isOn: $typewriterHapticsEnabled)
+                .disabled(!hapticsEnabled)
+        } header: {
+            Text("Feedback")
+        } footer: {
+            Text("Typewriter plays a soft tick for each character while editing preview text.")
         }
     }
 
@@ -170,6 +177,9 @@ struct SettingsView: View {
             Text("Designed in 2026 by Akintade Oluwaseun")
                 .font(.footnote)
                 .foregroundStyle(Color.fontiCream.opacity(0.6))
+            Text("Add the Fonti Specimen widget from your Home Screen — it shows fonts you save or preview.")
+                .font(.footnote)
+                .foregroundStyle(Color.fontiCream.opacity(0.55))
             Link(destination: githubURL) {
                 HStack {
                     Text("View on GitHub")
