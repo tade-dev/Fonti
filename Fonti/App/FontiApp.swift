@@ -8,6 +8,10 @@ struct FontiApp: App {
     @AppStorage("fonti.hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("fonti.hasRequestedNotifications") private var hasRequestedNotifications = false
 
+    init() {
+        ReviewPromptManager.bootstrap()
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -37,6 +41,9 @@ struct FontiApp: App {
                 }
             }
             .preferredColorScheme(.dark)
+            .onOpenURL { url in
+                DeepLinkRouter.handle(url)
+            }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 handleActive()

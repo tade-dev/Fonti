@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A1B2C3E02FD4000100977D11 /* FontiWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C3D02FD4000100977D11 /* FontiWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1B2C3E12FD4000100977D11 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3E22FD4000100977D11 /* WidgetKit.framework */; };
+		A1B2C3E32FD4000100977D11 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3E42FD4000100977D11 /* SwiftUI.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1EA73DC72FD308C600977D11 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,12 +20,46 @@
 			remoteGlobalIDString = 1EA73DB12FD308B600977D11;
 			remoteInfo = Fonti;
 		};
+		A1B2C3D52FD4000100977D11 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EA73DAA2FD308B600977D11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1B2C3D32FD4000100977D11;
+			remoteInfo = FontiWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1B2C3E52FD4000100977D11 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1B2C3E02FD4000100977D11 /* FontiWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1EA73DB22FD308B600977D11 /* Fonti.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fonti.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EA73DC02FD308C600977D11 /* FontiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FontiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D02FD4000100977D11 /* FontiWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FontiWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3E22FD4000100977D11 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		A1B2C3E42FD4000100977D11 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A1B2C3F02FD4000100977D11 /* Exceptions for "FontiWidgets" folder in "FontiWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A1B2C3D32FD4000100977D11 /* FontiWidgets */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1EA73DB42FD308B600977D11 /* Fonti */ = {
@@ -30,6 +70,19 @@
 		1EA73DC12FD308C600977D11 /* FontiTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = FontiTests;
+			sourceTree = "<group>";
+		};
+		A1B2C3D12FD4000100977D11 /* FontiWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A1B2C3F02FD4000100977D11 /* Exceptions for "FontiWidgets" folder in "FontiWidgets" target */,
+			);
+			path = FontiWidgets;
+			sourceTree = "<group>";
+		};
+		A1B2C3D22FD4000100977D11 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -49,6 +102,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C3D62FD4000100977D11 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3E12FD4000100977D11 /* WidgetKit.framework in Frameworks */,
+				A1B2C3E32FD4000100977D11 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -56,7 +118,10 @@
 			isa = PBXGroup;
 			children = (
 				1EA73DB42FD308B600977D11 /* Fonti */,
+				A1B2C3D22FD4000100977D11 /* Shared */,
+				A1B2C3D12FD4000100977D11 /* FontiWidgets */,
 				1EA73DC12FD308C600977D11 /* FontiTests */,
+				A1B2C3E72FD4000100977D11 /* Frameworks */,
 				1EA73DB32FD308B600977D11 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -65,9 +130,19 @@
 			isa = PBXGroup;
 			children = (
 				1EA73DB22FD308B600977D11 /* Fonti.app */,
+				A1B2C3D02FD4000100977D11 /* FontiWidgets.appex */,
 				1EA73DC02FD308C600977D11 /* FontiTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3E72FD4000100977D11 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3E22FD4000100977D11 /* WidgetKit.framework */,
+				A1B2C3E42FD4000100977D11 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -80,13 +155,16 @@
 				1EA73DAE2FD308B600977D11 /* Sources */,
 				1EA73DAF2FD308B600977D11 /* Frameworks */,
 				1EA73DB02FD308B600977D11 /* Resources */,
+				A1B2C3E52FD4000100977D11 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1B2C3D42FD4000100977D11 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1EA73DB42FD308B600977D11 /* Fonti */,
+				A1B2C3D22FD4000100977D11 /* Shared */,
 			);
 			name = Fonti;
 			packageProductDependencies = (
@@ -117,6 +195,29 @@
 			productReference = 1EA73DC02FD308C600977D11 /* FontiTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		A1B2C3D32FD4000100977D11 /* FontiWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D82FD4000100977D11 /* Build configuration list for PBXNativeTarget "FontiWidgets" */;
+			buildPhases = (
+				A1B2C3D92FD4000100977D11 /* Sources */,
+				A1B2C3D62FD4000100977D11 /* Frameworks */,
+				A1B2C3DA2FD4000100977D11 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1B2C3D12FD4000100977D11 /* FontiWidgets */,
+				A1B2C3D22FD4000100977D11 /* Shared */,
+			);
+			name = FontiWidgets;
+			packageProductDependencies = (
+			);
+			productName = FontiWidgets;
+			productReference = A1B2C3D02FD4000100977D11 /* FontiWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -133,6 +234,9 @@
 					1EA73DBE2FD308C600977D11 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = 1EA73DB12FD308B600977D11;
+					};
+					A1B2C3D32FD4000100977D11 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -151,6 +255,7 @@
 			projectRoot = "";
 			targets = (
 				1EA73DB12FD308B600977D11 /* Fonti */,
+				A1B2C3D32FD4000100977D11 /* FontiWidgets */,
 				1EA73DBE2FD308C600977D11 /* FontiTests */,
 			);
 		};
@@ -158,6 +263,13 @@
 
 /* Begin PBXResourcesBuildPhase section */
 		1EA73DB02FD308B600977D11 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3DA2FD4000100977D11 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -181,6 +293,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B2C3D92FD4000100977D11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -188,6 +307,11 @@
 			isa = PBXTargetDependency;
 			target = 1EA73DB12FD308B600977D11 /* Fonti */;
 			targetProxy = 1EA73DC72FD308C600977D11 /* PBXContainerItemProxy */;
+		};
+		A1B2C3D42FD4000100977D11 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1B2C3D32FD4000100977D11 /* FontiWidgets */;
+			targetProxy = A1B2C3D52FD4000100977D11 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -318,6 +442,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fonti/Fonti.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = TU566926VK;
@@ -356,6 +481,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fonti/Fonti.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = TU566926VK;
@@ -437,6 +563,74 @@
 			};
 			name = Release;
 		};
+		A1B2C3DB2FD4000100977D11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FontiWidgets/FontiWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = TU566926VK;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FontiWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Fonti;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tade.Fonti.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A1B2C3DC2FD4000100977D11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = FontiWidgets/FontiWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = TU566926VK;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FontiWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Fonti;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tade.Fonti.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -463,6 +657,15 @@
 			buildConfigurations = (
 				1EA73DC82FD308C600977D11 /* Debug */,
 				1EA73DCA2FD308C600977D11 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3D82FD4000100977D11 /* Build configuration list for PBXNativeTarget "FontiWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3DB2FD4000100977D11 /* Debug */,
+				A1B2C3DC2FD4000100977D11 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

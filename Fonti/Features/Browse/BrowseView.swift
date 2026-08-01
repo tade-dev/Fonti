@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 
 struct BrowseView: View {
+    @Binding var tabBarProgress: CGFloat
+    @Binding var hideFloatingTabBar: Bool
+
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
@@ -12,6 +15,14 @@ struct BrowseView: View {
 
     @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
     @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
+
+    init(
+        tabBarProgress: Binding<CGFloat> = .constant(0),
+        hideFloatingTabBar: Binding<Bool> = .constant(false)
+    ) {
+        _tabBarProgress = tabBarProgress
+        _hideFloatingTabBar = hideFloatingTabBar
+    }
 
     private var allFonts: [FontFamily] {
         // Core Text registration makes imported fonts also appear in
@@ -53,6 +64,7 @@ struct BrowseView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            .adoptForIGTabBar($tabBarProgress)
             .scrollDismissesKeyboard(.immediately)
             .background(Color.fontiInk.ignoresSafeArea())
             .dismissKeyboardOnBackgroundTap()
@@ -62,6 +74,7 @@ struct BrowseView: View {
                     .environment(\.cardNamespace, cardNamespace)
             }
             .onChange(of: path) { _, newPath in
+                hideFloatingTabBar = !newPath.isEmpty
                 if newPath.isEmpty {
                     withAnimation(.easeOut(duration: 0.25)) {
                         liftedFamilyId = nil
@@ -84,6 +97,10 @@ struct BrowseView: View {
                 guard !didAppear else { return }
                 try? await Task.sleep(for: .milliseconds(60))
                 didAppear = true
+                openPendingDeepLinkIfNeeded()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fontiConsumeDeepLink)) { _ in
+                openPendingDeepLinkIfNeeded()
             }
             .navigationTitle("Fonti")
             .navigationBarTitleDisplayMode(.inline)
@@ -118,6 +135,16 @@ struct BrowseView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
+            path.append(family)
+        }
+    }
+
+    private func openPendingDeepLinkIfNeeded() {
+        guard let name = DeepLinkRouter.consumePendingFamily() else { return }
+        let family = allFonts.first(where: { $0.id.caseInsensitiveCompare(name) == .orderedSame })
+            ?? FontFamily(id: name, displayName: name)
+        liftedFamilyId = family.id
+        if path.last?.id != family.id {
             path.append(family)
         }
     }

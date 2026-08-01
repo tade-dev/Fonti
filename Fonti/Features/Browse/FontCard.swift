@@ -90,6 +90,14 @@ struct FontCard: View {
                 modelContext.delete(existing)
             } else {
                 modelContext.insert(SavedFont(familyName: family.id))
+                let sample = UserDefaults.standard.string(forKey: "fonti.defaultSampleText")
+                WidgetSnapshotStore.publish(
+                    familyName: family.id,
+                    displayName: family.displayName,
+                    sampleText: sample
+                )
+                let total = (try? modelContext.fetchCount(FetchDescriptor<SavedFont>())) ?? 0
+                ReviewPromptManager.noteSavedFontCount(total)
             }
         }
     }
