@@ -1,8 +1,11 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.requestReview) private var requestReview
 
     @State private var activeTab: FontiTab = .browse
     @State private var progress: CGFloat = 0
@@ -61,6 +64,23 @@ struct RootView: View {
             activeTab = .browse
             NotificationCenter.default.post(name: .fontiConsumeDeepLink, object: nil)
         }
+        .task {
+            await maybeRequestReview(initialDelay: 2.0)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await maybeRequestReview(initialDelay: 1.2) }
+        }
+    }
+
+    /// Fires the App Store review prompt if a delight-trigger flag is pending
+    /// and all guardrails pass. Delay lets the current sheet/transition settle.
+    private func maybeRequestReview(initialDelay seconds: Double) async {
+        guard ReviewPromptManager.shouldRequestReview() else { return }
+        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+        guard ReviewPromptManager.shouldRequestReview() else { return }
+        requestReview()
+        ReviewPromptManager.markPrompted()
     }
 
     /// Keep the Home Screen widget stocked with up to 3 saved fonts.

@@ -6,11 +6,6 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var saved: [SavedFont]
     @Query(sort: \ImportedFont.familyName) private var imports: [ImportedFont]
-
-    // Appearance is disabled — Fonti is dark-only for v1. See RootView for the matching
-    // .preferredColorScheme(.dark) hardcode. Re-enable here + in RootView + uncomment
-    // appearanceSection below to bring back theme switching.
-    // @AppStorage("fonti.appearance")         private var appearance: AppAppearance = .dark
     @AppStorage("fonti.defaultSampleText")  private var defaultSampleText: String = ""
     @AppStorage("fonti.defaultPreviewSize") private var defaultPreviewSize: Double = 48
     @AppStorage("fonti.hapticsEnabled")           private var hapticsEnabled: Bool = true
@@ -177,7 +172,7 @@ struct SettingsView: View {
             Text("Designed in 2026 by Akintade Oluwaseun")
                 .font(.footnote)
                 .foregroundStyle(Color.fontiCream.opacity(0.6))
-            Text("Add the Fonti Specimen widget from your Home Screen — it shows fonts you save or preview.")
+            Text("Add the Fonti Specimen widget from your Home Screen, it shows fonts you save or preview.")
                 .font(.footnote)
                 .foregroundStyle(Color.fontiCream.opacity(0.55))
             Link(destination: githubURL) {

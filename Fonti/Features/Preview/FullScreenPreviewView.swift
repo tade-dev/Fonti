@@ -398,6 +398,9 @@ struct FullScreenPreviewView: View {
             ) {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
+            .simultaneousGesture(TapGesture().onEnded {
+                ReviewPromptManager.noteShareCompleted()
+            })
         }
     }
 }

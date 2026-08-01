@@ -8,6 +8,10 @@ struct FontiApp: App {
     @AppStorage("fonti.hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("fonti.hasRequestedNotifications") private var hasRequestedNotifications = false
 
+    init() {
+        ReviewPromptManager.bootstrap()
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {

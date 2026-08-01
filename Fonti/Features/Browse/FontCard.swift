@@ -96,6 +96,8 @@ struct FontCard: View {
                     displayName: family.displayName,
                     sampleText: sample
                 )
+                let total = (try? modelContext.fetchCount(FetchDescriptor<SavedFont>())) ?? 0
+                ReviewPromptManager.noteSavedFontCount(total)
             }
         }
     }
