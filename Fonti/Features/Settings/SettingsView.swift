@@ -211,7 +211,8 @@ struct SettingsView: View {
             var firstFailure: String?
             for url in urls {
                 do {
-                    _ = try CustomFontManager.import(from: url, into: modelContext)
+                    let imported = try CustomFontManager.import(from: url, into: modelContext)
+                    WidgetPublisher.noteImport(imported)
                 } catch let error as CustomFontError {
                     if firstFailure == nil { firstFailure = error.errorDescription }
                 } catch {
@@ -224,6 +225,7 @@ struct SettingsView: View {
 
     private func remove(_ font: ImportedFont) {
         withAnimation(.snappy(duration: 0.25)) {
+            WidgetPublisher.forgetImport(font)
             CustomFontManager.remove(font, from: modelContext)
         }
     }

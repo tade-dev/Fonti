@@ -58,6 +58,7 @@ struct RootView: View {
         .task {
             let imports = (try? modelContext.fetch(FetchDescriptor<ImportedFont>())) ?? []
             CustomFontManager.registerAll(imports)
+            WidgetPublisher.indexImports(imports)
             syncWidgetsFromSaved()
         }
         .onReceive(NotificationCenter.default.publisher(for: .fontiPendingDeepLink)) { _ in
@@ -83,24 +84,16 @@ struct RootView: View {
         ReviewPromptManager.markPrompted()
     }
 
-    /// Keep the Home Screen widget stocked with up to 3 saved fonts.
+    /// Keep the Home Screen widget stocked with the most recent saved fonts.
     private func syncWidgetsFromSaved() {
         let saved = (try? modelContext.fetch(
             FetchDescriptor<SavedFont>(sortBy: [SortDescriptor(\.savedAt, order: .reverse)])
         )) ?? []
 
-        let sample = UserDefaults.standard.string(forKey: "fonti.defaultSampleText")
-        let entries = saved.prefix(3).map {
-            WidgetFontEntry(
-                familyName: $0.familyName,
-                displayName: $0.familyName,
-                sampleText: {
-                    let trimmed = sample?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    return trimmed.isEmpty ? "Aa" : trimmed
-                }()
-            )
-        }
-        WidgetSnapshotStore.replaceAll(with: Array(entries))
+        WidgetPublisher.syncFromSaved(
+            saved,
+            sampleText: UserDefaults.standard.string(forKey: "fonti.defaultSampleText")
+        )
     }
 }
 

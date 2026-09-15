@@ -10,6 +10,14 @@ enum FontPairings {
         pairs[family] ?? []
     }
 
+    /// Every family this table knows about, sorted.
+    ///
+    /// Doubles as Fonti's curated pool for the featured font — these are all
+    /// faces a designer deliberately wrote a pairing for. Sorted because
+    /// `Dictionary.keys` has no stable order, and the featured font has to pick
+    /// the same face for a given day on every launch.
+    static let curatedFamilies: [String] = pairs.keys.sorted()
+
     private static let pairs: [String: [String]] = [
         // Serif + sans classics
         "Georgia":              ["Helvetica Neue", "Avenir Next", "PT Sans"],
