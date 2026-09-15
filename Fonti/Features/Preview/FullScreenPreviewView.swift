@@ -206,11 +206,7 @@ struct FullScreenPreviewView: View {
         .onAppear {
             syncHistorySelectionToCurrentText()
             TypewriterHaptics.prepare()
-            WidgetSnapshotStore.publish(
-                familyName: family.id,
-                displayName: family.displayName,
-                sampleText: previewText
-            )
+            WidgetPublisher.publish(family: family, sampleText: previewText)
         }
     }
 
