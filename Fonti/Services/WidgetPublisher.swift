@@ -1,4 +1,6 @@
+import AppIntents
 import Foundation
+import SwiftData
 
 /// The single place that turns Fonti's own types into widget snapshot entries.
 ///
@@ -38,6 +40,21 @@ enum WidgetPublisher {
             isImported: fileName != nil,
             fileName: fileName
         )
+    }
+
+    /// Re-publish the shared saved-fonts mirror after a save or unsave.
+    ///
+    /// Without this the mirror only refreshes at launch, so Siri would answer
+    /// "what have I saved?" with a stale list for the rest of the session.
+    /// Also nudges App Shortcuts to re-snapshot its phrase options, since
+    /// "Open <font> in Fonti" expands over the saved set.
+    static func refreshSavedMirror(from context: ModelContext) {
+        let saved = (try? context.fetch(
+            FetchDescriptor<SavedFont>(sortBy: [SortDescriptor(\.savedAt, order: .reverse)])
+        )) ?? []
+
+        SavedFontsMirror.replaceAll(with: saved.map(\.familyName))
+        FontiShortcuts.updateAppShortcutParameters()
     }
 
     /// Replace the snapshot with the user's most recent saved fonts.

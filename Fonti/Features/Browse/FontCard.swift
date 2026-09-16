@@ -93,6 +93,8 @@ struct FontCard: View {
     }
 
     private func toggleSaved() {
+        defer { WidgetPublisher.refreshSavedMirror(from: modelContext) }
+
         withAnimation(.snappy(duration: 0.25)) {
             if let existing = matches.first {
                 modelContext.delete(existing)
