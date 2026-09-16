@@ -28,7 +28,15 @@ struct SettingsView: View {
         }
         .fileImporter(
             isPresented: $showingImporter,
-            allowedContentTypes: [.font, UTType("public.truetype-font") ?? .font, UTType("public.opentype-font") ?? .font],
+            // `public.truetype-ttf-font` is what a .ttf actually resolves to —
+            // `public.truetype-font` alone never matches one. This worked only
+            // because `.font`, which everything here conforms to, was listed.
+            allowedContentTypes: [
+                .font,
+                UTType("public.truetype-ttf-font") ?? .font,
+                UTType("public.opentype-font") ?? .font,
+                UTType("public.truetype-font") ?? .font
+            ],
             allowsMultipleSelection: true
         ) { result in
             handleImport(result)

@@ -16,6 +16,18 @@ struct RootView: View {
     /// intent can open it directly, without first navigating into a font.
     @State private var compareSession: CompareSession?
 
+    /// A font file opened from outside the app, awaiting confirmation.
+    @State private var pendingImport: PendingImport?
+    @State private var importError: String?
+
+    /// A font file plus what Fonti could read off it, held while the user
+    /// decides. The URL is kept so the import can still copy the original.
+    private struct PendingImport: Identifiable {
+        let url: URL
+        let inspection: CustomFontManager.Inspection
+        var id: String { url.absoluteString }
+    }
+
     var body: some View {
         TabView(selection: $activeTab) {
             
@@ -80,6 +92,12 @@ struct RootView: View {
             if let destination = navigator.pending {
                 route(to: destination)
             }
+            // Same for a font file — opening one from Files launches the app.
+            offerPendingFontFile()
+        }
+        .onChange(of: navigator.pendingFontFile) { _, url in
+            guard url != nil else { return }
+            offerPendingFontFile()
         }
         .task {
             await maybeRequestReview(initialDelay: 2.0)
@@ -90,6 +108,25 @@ struct RootView: View {
         }
         .fullScreenCover(item: $compareSession) { session in
             CompareView(session: session)
+        }
+        .sheet(item: $pendingImport) { request in
+            ImportFontSheet(
+                inspection: request.inspection,
+                fileName: request.url.lastPathComponent,
+                onAdd: { performImport(request) },
+                onCancel: { pendingImport = nil }
+            )
+        }
+        .alert(
+            "Couldn't add that font",
+            isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )
+        ) {
+            Button("OK") { importError = nil }
+        } message: {
+            Text(importError ?? "")
         }
     }
 
@@ -124,6 +161,41 @@ struct RootView: View {
                 initialText: UserDefaults.standard
                     .string(forKey: "fonti.defaultSampleText") ?? ""
             )
+        }
+    }
+
+    /// Read an incoming font file and offer it, rather than importing outright.
+    ///
+    /// Rejecting an unreadable file here means the confirmation sheet never
+    /// appears for something that couldn't have worked anyway.
+    private func offerPendingFontFile() {
+        guard let url = navigator.consumeFontFile() else { return }
+
+        guard let inspection = CustomFontManager.inspect(url, in: modelContext) else {
+            importError = "\(url.lastPathComponent) doesn't look like a valid .ttf or .otf font."
+            return
+        }
+        pendingImport = PendingImport(url: url, inspection: inspection)
+    }
+
+    /// Confirmed: copy the file in, register it, and show what was added.
+    private func performImport(_ request: PendingImport) {
+        pendingImport = nil
+
+        do {
+            let imported = try CustomFontManager.import(from: request.url, into: modelContext)
+            WidgetPublisher.noteImport(imported)
+
+            // Land on the new font's specimen — the most direct confirmation
+            // that it worked, and the thing the user wanted to see anyway.
+            navigator.go(to: .font(familyName: imported.familyName))
+
+            // The font set changed, so Spotlight's fingerprint is now stale.
+            Task { await FontSpotlightIndexer.indexAllIfNeeded() }
+        } catch let error as CustomFontError {
+            importError = error.errorDescription
+        } catch {
+            importError = error.localizedDescription
         }
     }
 
