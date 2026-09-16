@@ -188,4 +188,79 @@ final class FontiIntentTests: XCTestCase {
             )
             .run()
     }
+
+    // MARK: - Spotlight
+    //
+    // The app indexes every installed family at launch, so these assert the
+    // entities are actually reachable from system search rather than only from
+    // inside Fonti.
+
+    /// Spotlight indexing is asynchronous and the first query after a launch
+    /// can land before the index settles, so poll rather than sleeping once —
+    /// a fixed wait made this pass or fail depending on test ordering.
+    private func spotlightHits(
+        for query: String,
+        timeout: TimeInterval = 20
+    ) async throws -> [AnyAppEntity] {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let hits = try await fontEntity.spotlightQuery(query)
+            if !hits.isEmpty { return hits }
+            try await Task.sleep(for: .milliseconds(500))
+        }
+        return try await fontEntity.spotlightQuery(query)
+    }
+
+    func testFontsAreIndexedInSpotlight() async throws {
+        let hits = try await spotlightHits(for: "Bodoni")
+        XCTAssertFalse(hits.isEmpty, "Expected Bodoni to be findable in Spotlight")
+
+        let found = try names(hits)
+        XCTAssertTrue(
+            found.contains { $0.hasPrefix("Bodoni") },
+            "Expected a Bodoni face among \(found)"
+        )
+    }
+
+    func testSpotlightFindsFontsByClassification() async throws {
+        // "grotesque" appears in no font name — it matches only because the
+        // indexed keywords carry the classification's synonyms.
+        let hits = try await spotlightHits(for: "grotesque")
+        XCTAssertFalse(hits.isEmpty, "Classification synonyms should be searchable")
+    }
+
+    // MARK: - Onscreen context
+    //
+    // The read-back side of the specimen screen's annotation: this is what
+    // lets Apple Intelligence resolve "this" to the face being displayed.
+
+    @MainActor
+    func testSpecimenScreenAnnotatesItsFont() async throws {
+        // Addressed by bundle identifier rather than `XCUIApplication()`.
+        // The plain initialiser resolves the target application from the
+        // target's build settings, which this bundle doesn't set — so it had
+        // nothing to attach to and took the runner down with it.
+        //
+        // No explicit launch() either: OpenFontIntent declares
+        // .foreground(.immediate), so running it brings the app up.
+        let app = XCUIApplication(bundleIdentifier: "com.tade.Fonti")
+
+        try await definitions.intents["OpenFontIntent"]
+            .makeIntent(target: fontEntity.makeReference(identifier: "Didot"))
+            .run()
+
+        XCTAssertTrue(
+            app.staticTexts["Didot"].waitForExistence(timeout: 10),
+            "Expected the Didot specimen screen to appear"
+        )
+
+        let annotations = try await fontEntity.viewAnnotations()
+        XCTAssertFalse(annotations.isEmpty, "The specimen screen should annotate its font")
+
+        let annotated = try annotations.map { try $0.entity.name.as(String.self) }
+        XCTAssertTrue(
+            annotated.contains("Didot"),
+            "Expected Didot to be the onscreen entity, got \(annotated)"
+        )
+    }
 }
