@@ -39,6 +39,16 @@
                ReferencedContainer = "container:Fonti.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "1E4CD085305B534F00F27960"
+               BuildableName = "FontiIntentTests.xctest"
+               BlueprintName = "FontiIntentTests"
+               ReferencedContainer = "container:Fonti.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

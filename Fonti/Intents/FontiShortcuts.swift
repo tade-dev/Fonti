@@ -56,6 +56,16 @@ struct FontiShortcuts: AppShortcutsProvider {
         )
 
         AppShortcut(
+            intent: FindSimilarFontsIntent(),
+            phrases: [
+                "Find similar fonts in \(.applicationName)",
+                "Find something like \(\.$font) in \(.applicationName)"
+            ],
+            shortTitle: "Similar Fonts",
+            systemImageName: "square.on.square"
+        )
+
+        AppShortcut(
             intent: CompareFontsIntent(),
             phrases: [
                 "Compare fonts in \(.applicationName)",

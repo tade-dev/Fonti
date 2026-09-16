@@ -2,16 +2,20 @@ import AppIntents
 
 /// "Find serif fonts." / "Show me monospace fonts in Fonti."
 ///
-/// Adopts `.system.search` — the published contract for navigating to search
-/// results — so Apple Intelligence handles the language and Fonti handles the
-/// search. There is no LLM here: `FontCatalog` does a deterministic match on
-/// family name and classification.
+/// Adopts `.system.searchInApp` — the published contract for navigating to
+/// search results — so Apple Intelligence handles the language and Fonti
+/// handles the search. There is no LLM here: `FontCatalog` does a
+/// deterministic match on family name and classification.
+///
+/// Not `.system.search`, which this replaced: that spelling is deprecated as
+/// of 27.0 in favour of `searchInApp`. The intent's type name and parameter
+/// shape are unchanged, so any saved shortcut still resolves.
 ///
 /// The schema fixes the shape to a single `criteria` string. `category` and
 /// `savedOnly` are optional extras, which per Apple's guidance means Siri and
 /// Apple Intelligence never fill them — they exist so the Shortcuts editor can
 /// offer a real category picker instead of making people type "sans serif".
-@AppIntent(schema: .system.search)
+@AppIntent(schema: .system.searchInApp)
 struct FindFontsIntent {
     var criteria: StringSearchCriteria
 

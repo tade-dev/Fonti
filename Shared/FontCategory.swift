@@ -64,6 +64,24 @@ enum FontCategory: String, CaseIterable, Sendable {
         }
     }
 
+    /// Whether two classifications are close enough to compare for similarity.
+    ///
+    /// Serif and slab serif are neighbours — a slab is a serif with squared-off
+    /// brackets, so American Typewriter is a reasonable answer to "something
+    /// like Georgia". Everything else stays in its own lane: script, monospace
+    /// and decorative faces are defined by what makes them *unlike* a text
+    /// face, so "something like Zapfino" must never return Helvetica.
+    ///
+    /// `.unclassified` compares with nothing. Those are mostly non-Latin
+    /// faces, and ranking them by Latin proportions would be meaningless.
+    func isComparable(with other: FontCategory) -> Bool {
+        guard self != .unclassified, other != .unclassified else { return false }
+        if self == other { return true }
+
+        let serifFamily: Set<FontCategory> = [.serif, .slabSerif]
+        return serifFamily.contains(self) && serifFamily.contains(other)
+    }
+
     /// Does a spoken term name this category?
     ///
     /// Whitespace and hyphens are stripped so "sans serif", "sans-serif" and
