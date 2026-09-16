@@ -29,9 +29,4 @@ enum SavedFontsMirror {
         defaults.set(familyNames, forKey: storageKey)
     }
 
-    static func contains(_ familyName: String) -> Bool {
-        let name = familyName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return false }
-        return load().contains { $0.caseInsensitiveCompare(name) == .orderedSame }
-    }
 }

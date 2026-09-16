@@ -43,11 +43,17 @@ final class FontiNavigator {
 /// actually surface to the user — a plain `Error` shows a generic failure.
 enum FontiIntentError: Error, CustomLocalizedStringResourceConvertible {
     case fontUnavailable(String)
+    case noPairings(String)
+    case sameFontTwice(String)
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .fontUnavailable(let name):
             return "\(name) isn't available on this device."
+        case .noPairings(let name):
+            return "Fonti doesn't have a pairing for \(name) yet."
+        case .sameFontTwice(let name):
+            return "Pick two different typefaces — both were \(name)."
         }
     }
 }

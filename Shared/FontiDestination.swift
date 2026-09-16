@@ -14,8 +14,10 @@ enum FontiDestination: Hashable, Sendable {
     case font(familyName: String)
     /// The Saved tab.
     case saved
-    /// Browse, with a search term applied.
+    /// Browse, filtered by a term.
     case search(query: String)
+    /// Side-by-side comparison of two families.
+    case compare(left: String, right: String)
 
     static let scheme = "fonti"
 
@@ -32,6 +34,12 @@ enum FontiDestination: Hashable, Sendable {
         case .search(let query):
             components.host = "search"
             components.queryItems = [URLQueryItem(name: "q", value: query)]
+        case .compare(let left, let right):
+            components.host = "compare"
+            components.queryItems = [
+                URLQueryItem(name: "left", value: left),
+                URLQueryItem(name: "right", value: right)
+            ]
         }
 
         // Every case above produces a valid URL; the fallback only exists so
@@ -61,6 +69,12 @@ enum FontiDestination: Hashable, Sendable {
         case "search":
             guard let query = value("q"), !query.isEmpty else { return nil }
             self = .search(query: query)
+        case "compare":
+            guard
+                let left = value("left"), !left.isEmpty,
+                let right = value("right"), !right.isEmpty
+            else { return nil }
+            self = .compare(left: left, right: right)
         default:
             return nil
         }
