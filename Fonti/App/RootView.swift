@@ -65,6 +65,8 @@ struct RootView: View {
             CustomFontManager.registerAll(imports)
             WidgetPublisher.indexImports(imports)
             syncWidgetsFromSaved()
+            // After registering imports, so imported faces are indexed too.
+            await FontSpotlightIndexer.indexAllIfNeeded()
         }
         // Every external entry point — widget tap, Siri, App Shortcut,
         // Spotlight — arrives as a FontiDestination here.

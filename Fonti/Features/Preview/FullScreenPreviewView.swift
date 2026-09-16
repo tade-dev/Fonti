@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UIKit
 
@@ -192,7 +193,26 @@ struct FullScreenPreviewView: View {
             TypewriterHaptics.prepare()
             WidgetPublisher.publish(family: family, sampleText: previewText)
         }
+        // What makes "this" resolvable. While this screen is up, the foreground
+        // activity carries the identifier of the face being shown, so Apple
+        // Intelligence can bind "what pairs with this?" or "find something
+        // like this" to the right typeface without the user naming it.
+        //
+        // A single primary item, so the whole screen is annotated. A list would
+        // instead annotate each row with a selection type, since collapsing
+        // several visible items to one activity-level entity would make "the
+        // second one" meaningless.
+        .userActivity(Self.viewFontActivityType) { activity in
+            activity.title = family.displayName
+            activity.appEntityIdentifier = EntityIdentifier(
+                for: FontEntity.self,
+                identifier: family.id
+            )
+        }
     }
+
+    /// Activity type for the specimen screen, used for onscreen annotation.
+    static let viewFontActivityType = "com.tade.Fonti.viewFont"
 
     private func styledFont(size: CGFloat) -> Font {
         var font = Font.custom(family.id, size: size)
