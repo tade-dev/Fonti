@@ -61,7 +61,7 @@ struct BrowseView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 FontCollectionView(
-                    items: allFonts,
+                    items: model.filtered(allFonts),
                     layout: layout,
                     spacing: 14
                 ) { family in
@@ -109,13 +109,17 @@ struct BrowseView: View {
                 (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
             }
             .safeAreaInset(edge: .top) {
-                inputBar
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .opacity(didAppear ? 1 : 0)
-                    .offset(y: didAppear ? 0 : -30)
-                    .blur(radius: didAppear ? 0 : 6)
-                    .animation(.smooth(duration: 0.6).delay(0.1), value: didAppear)
+                VStack(spacing: 8) {
+                    inputBar
+                    filterChip
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .opacity(didAppear ? 1 : 0)
+                .offset(y: didAppear ? 0 : -30)
+                .blur(radius: didAppear ? 0 : 6)
+                .animation(.smooth(duration: 0.6).delay(0.1), value: didAppear)
             }
             .task(id: "browse-enter") {
                 rebuildFonts()
@@ -140,6 +144,46 @@ struct BrowseView: View {
                     )
                 }
             }
+        }
+    }
+
+    /// Shows what a search request narrowed the list to, and how to undo it.
+    ///
+    /// A filter arrives from outside the app — Siri, Spotlight, a deep link —
+    /// so without this the list would silently be missing fonts with nothing
+    /// on screen to explain why.
+    @ViewBuilder
+    private var filterChip: some View {
+        if model.isFiltering {
+            let count = model.filtered(allFonts).count
+
+            HStack(spacing: 8) {
+                Text(model.filter)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.fontiCream)
+                    .lineLimit(1)
+
+                Text("\(count)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.fontiCream.opacity(0.5))
+                    .monospacedDigit()
+
+                Button {
+                    withAnimation(.smooth(duration: 0.3)) { model.filter = "" }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.fontiCream.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear filter")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .glassEffect(in: .capsule)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Filtering by \(model.filter), \(count) fonts")
+            .transition(.opacity.combined(with: .move(edge: .top)))
         }
     }
 
@@ -191,12 +235,17 @@ struct BrowseView: View {
 
         case .search(let query):
             _ = navigator.consume()
-            // Drop back to the list so the results are visible, then seed the
-            // existing search field — Fonti already owns the filtering.
+            // Drop back to the list so results are visible, then narrow it.
+            // Sets `filter`, never `input` — `input` is the specimen text, so
+            // writing the query there would rewrite every card instead of
+            // filtering anything.
             path.removeAll()
-            model.input = query
+            withAnimation(.smooth(duration: 0.3)) {
+                model.filter = query
+            }
 
-        case .saved, .none:
+        case .saved, .compare, .none:
+            // Owned elsewhere: Saved by the tab, compare by RootView's cover.
             break
         }
     }

@@ -65,26 +65,52 @@ enum FontCatalog {
         return allFonts().filter { wanted.contains($0.familyName.lowercased()) }
     }
 
-    /// Substring match on the family name.
+    /// Match on family name *or* classification.
     ///
     /// Fonti owns the search; Apple Intelligence only decides *that* the user
-    /// wanted to search. Prefix matches rank above interior ones so "helv"
-    /// finds Helvetica before Neue Helvetica.
+    /// wanted to search. Matching the category matters because the
+    /// `.system.search` schema hands over a bare string — "serif" has to find
+    /// serif faces, not just families with "serif" in their name.
+    ///
+    /// Name matches rank above category matches, and prefix above interior, so
+    /// "helv" finds Helvetica first and "mono" doesn't bury Monaco under every
+    /// monospace face.
     static func search(_ query: String, limit: Int = 50) -> [CatalogFont] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !needle.isEmpty else { return Array(allFonts().prefix(limit)) }
 
-        let matches = allFonts().filter { $0.familyName.lowercased().contains(needle) }
-        return Array(
-            matches.sorted { lhs, rhs in
-                let lhsPrefix = lhs.familyName.lowercased().hasPrefix(needle)
-                let rhsPrefix = rhs.familyName.lowercased().hasPrefix(needle)
-                if lhsPrefix != rhsPrefix { return lhsPrefix }
-                return lhs.familyName.lowercased() < rhs.familyName.lowercased()
+        func rank(_ font: CatalogFont) -> Int? {
+            let name = font.familyName.lowercased()
+            if name.hasPrefix(needle) { return 0 }
+            if name.contains(needle) { return 1 }
+            if font.category.matches(searchTerm: needle) { return 2 }
+            return nil
+        }
+
+        // Broken into steps with explicit types on purpose: as one chained
+        // expression the type checker gives up ("unable to type-check in
+        // reasonable time").
+        var ranked: [(font: CatalogFont, rank: Int)] = []
+        for font in allFonts() {
+            if let value = rank(font) {
+                ranked.append((font, value))
             }
-            .prefix(limit)
-        )
+        }
+
+        ranked.sort { lhs, rhs in
+            if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
+            return lhs.font.familyName.lowercased() < rhs.font.familyName.lowercased()
+        }
+
+        let sorted: [CatalogFont] = ranked.map(\.font)
+        return Array(sorted.prefix(limit))
     }
+
+    /// Every font in one classification.
+    static func fonts(in category: FontCategory, limit: Int = 50) -> [CatalogFont] {
+        Array(allFonts().filter { $0.category == category }.prefix(limit))
+    }
+
 
     /// The user's saved fonts, in the order they saved them.
     static func savedFonts() -> [CatalogFont] {

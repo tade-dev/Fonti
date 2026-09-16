@@ -34,5 +34,35 @@ struct FontiShortcuts: AppShortcutsProvider {
             shortTitle: "Saved Fonts",
             systemImageName: "heart"
         )
+
+        AppShortcut(
+            intent: FindFontsIntent(),
+            phrases: [
+                "Find fonts in \(.applicationName)",
+                "Search for fonts in \(.applicationName)"
+            ],
+            shortTitle: "Find Fonts",
+            systemImageName: "magnifyingglass"
+        )
+
+        AppShortcut(
+            intent: FindFontPairingsIntent(),
+            phrases: [
+                "Find font pairings in \(.applicationName)",
+                "What pairs with \(\.$font) in \(.applicationName)"
+            ],
+            shortTitle: "Font Pairings",
+            systemImageName: "rectangle.on.rectangle"
+        )
+
+        AppShortcut(
+            intent: CompareFontsIntent(),
+            phrases: [
+                "Compare fonts in \(.applicationName)",
+                "Compare \(\.$firstFont) in \(.applicationName)"
+            ],
+            shortTitle: "Compare Fonts",
+            systemImageName: "arrow.left.and.right"
+        )
     }
 }

@@ -12,6 +12,9 @@ struct RootView: View {
     @State private var activeTab: FontiTab = .browse
     @State private var progress: CGFloat = 0
     @State private var hideFloatingTabBar = false
+    /// Compare is presented here rather than from the preview screen so an
+    /// intent can open it directly, without first navigating into a font.
+    @State private var compareSession: CompareSession?
 
     var body: some View {
         TabView(selection: $activeTab) {
@@ -83,6 +86,9 @@ struct RootView: View {
             guard phase == .active else { return }
             Task { await maybeRequestReview(initialDelay: 1.2) }
         }
+        .fullScreenCover(item: $compareSession) { session in
+            CompareView(session: session)
+        }
     }
 
     /// Fires the App Store review prompt if a delight-trigger flag is pending
@@ -108,6 +114,14 @@ struct RootView: View {
             // Nothing further to resolve, so clear it here; Browse consumes
             // its own destinations once its list is ready.
             _ = navigator.consume()
+        case .compare(let left, let right):
+            _ = navigator.consume()
+            compareSession = CompareSession(
+                left: FontFamily(id: left, displayName: left),
+                right: FontFamily(id: right, displayName: right),
+                initialText: UserDefaults.standard
+                    .string(forKey: "fonti.defaultSampleText") ?? ""
+            )
         }
     }
 

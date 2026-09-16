@@ -39,6 +39,41 @@ enum FontCategory: String, CaseIterable, Sendable {
         }
     }
 
+    /// The words someone might actually say for this category.
+    ///
+    /// An explicit table rather than substring matching on `displayName`:
+    /// "sans serif" normalises to "sansserif", which *contains* "serif", so a
+    /// substring test answers a request for serif faces with Helvetica and
+    /// Arial. Matching whole terms keeps the categories genuinely distinct.
+    var searchTerms: Set<String> {
+        switch self {
+        case .serif:
+            return ["serif", "serifs", "roman", "oldstyle", "transitional", "didone", "modern"]
+        case .sansSerif:
+            return ["sans", "sansserif", "grotesque", "grotesk", "gothic", "neogrotesque"]
+        case .slabSerif:
+            return ["slab", "slabserif", "egyptian", "typewriter"]
+        case .monospace:
+            return ["mono", "monospace", "monospaced", "fixedwidth", "code"]
+        case .script:
+            return ["script", "cursive", "handwriting", "handwritten", "calligraphic"]
+        case .decorative:
+            return ["decorative", "display", "ornamental", "ornament", "novelty"]
+        case .unclassified:
+            return []
+        }
+    }
+
+    /// Does a spoken term name this category?
+    ///
+    /// Whitespace and hyphens are stripped so "sans serif", "sans-serif" and
+    /// "sansserif" all land in the same place.
+    func matches(searchTerm term: String) -> Bool {
+        let needle = term.lowercased().filter { !$0.isWhitespace && $0 != "-" }
+        guard !needle.isEmpty else { return false }
+        return searchTerms.contains(needle)
+    }
+
     /// Classify a family by asking Core Text what it is.
     static func category(for familyName: String) -> FontCategory {
         guard let traits = symbolicTraits(for: familyName) else { return .unclassified }
