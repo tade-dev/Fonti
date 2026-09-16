@@ -160,6 +160,7 @@ struct SavedFontsView: View {
         withAnimation(.snappy(duration: 0.25)) {
             modelContext.delete(entry)
         }
+        WidgetPublisher.refreshSavedMirror(from: modelContext)
     }
 
     /// Position by persistent id, so the entrance stagger doesn't cost a linear

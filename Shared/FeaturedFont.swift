@@ -10,7 +10,10 @@ enum FeaturedFont {
     /// The featured family for a given day, or nil if nothing in the pool can
     /// actually be rendered on this device.
     static func familyName(on date: Date = .now, calendar: Calendar = .current) -> String? {
-        let pool = FontPairings.curatedFamilies.filter(FontAvailability.isAvailable)
+        // Wrapped in a closure rather than passed as `filter(FontAvailability
+        // .isAvailable)`: handing a main-actor function to `filter` makes it a
+        // nonisolated call, which Swift 6 rejects.
+        let pool = FontPairings.curatedFamilies.filter { FontAvailability.isAvailable($0) }
         guard !pool.isEmpty else { return nil }
         return pool[dayIndex(for: date, calendar: calendar, modulo: pool.count)]
     }
@@ -29,7 +32,7 @@ enum FeaturedFont {
     /// The pairing to show alongside the featured face, if we have one.
     static func pairing(for familyName: String) -> String? {
         FontPairings.pairings(for: familyName)
-            .first(where: FontAvailability.isAvailable)
+            .first { FontAvailability.isAvailable($0) }
     }
 
     /// Editorial specimen copy, rotated on the same daily seed so the whole

@@ -7,6 +7,8 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
 
+    private var navigator = FontiNavigator.shared
+
     @State private var activeTab: FontiTab = .browse
     @State private var progress: CGFloat = 0
     @State private var hideFloatingTabBar = false
@@ -61,9 +63,18 @@ struct RootView: View {
             WidgetPublisher.indexImports(imports)
             syncWidgetsFromSaved()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .fontiPendingDeepLink)) { _ in
-            activeTab = .browse
-            NotificationCenter.default.post(name: .fontiConsumeDeepLink, object: nil)
+        // Every external entry point — widget tap, Siri, App Shortcut,
+        // Spotlight — arrives as a FontiDestination here.
+        .onChange(of: navigator.pending) { _, destination in
+            guard let destination else { return }
+            route(to: destination)
+        }
+        .task {
+            // A cold launch from an intent sets the destination before any view
+            // exists, so pick up whatever was already waiting.
+            if let destination = navigator.pending {
+                route(to: destination)
+            }
         }
         .task {
             await maybeRequestReview(initialDelay: 2.0)
@@ -84,7 +95,26 @@ struct RootView: View {
         ReviewPromptManager.markPrompted()
     }
 
-    /// Keep the Home Screen widget stocked with the most recent saved fonts.
+    /// Send a destination to the tab that owns it.
+    ///
+    /// The only place that knows how Fonti's UI is arranged — intents, widgets
+    /// and Spotlight all just name a destination.
+    private func route(to destination: FontiDestination) {
+        switch destination {
+        case .font, .search:
+            activeTab = .browse
+        case .saved:
+            activeTab = .saved
+            // Nothing further to resolve, so clear it here; Browse consumes
+            // its own destinations once its list is ready.
+            _ = navigator.consume()
+        }
+    }
+
+    /// Keep the widget and the shared saved-fonts mirror in step with SwiftData.
+    ///
+    /// The mirror is what lets an App Intent answer "what have I saved?" — the
+    /// SwiftData store lives in the app container and intents can't read it.
     private func syncWidgetsFromSaved() {
         let saved = (try? modelContext.fetch(
             FetchDescriptor<SavedFont>(sortBy: [SortDescriptor(\.savedAt, order: .reverse)])
@@ -94,12 +124,8 @@ struct RootView: View {
             saved,
             sampleText: UserDefaults.standard.string(forKey: "fonti.defaultSampleText")
         )
+        SavedFontsMirror.replaceAll(with: saved.map(\.familyName))
     }
-}
-
-extension Notification.Name {
-    static let fontiPendingDeepLink = Notification.Name("fonti.pendingDeepLink")
-    static let fontiConsumeDeepLink = Notification.Name("fonti.consumeDeepLink")
 }
 
 #Preview {

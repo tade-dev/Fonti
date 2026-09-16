@@ -5,6 +5,8 @@ struct BrowseView: View {
     @Binding var tabBarProgress: CGFloat
     @Binding var hideFloatingTabBar: Bool
 
+    private var navigator = FontiNavigator.shared
+
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
     @State private var path: [FontFamily] = []
@@ -125,7 +127,7 @@ struct BrowseView: View {
             .onChange(of: imports.count) { _, _ in
                 rebuildFonts()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .fontiConsumeDeepLink)) { _ in
+            .onChange(of: navigator.pending) { _, _ in
                 openPendingDeepLinkIfNeeded()
             }
             .navigationTitle("Fonti")
@@ -172,13 +174,30 @@ struct BrowseView: View {
         }
     }
 
+    /// Act on whatever Siri, a widget or Spotlight asked for.
+    ///
+    /// Only consumes destinations Browse actually owns, so a `.saved`
+    /// destination is left for the Saved tab rather than being swallowed here.
     private func openPendingDeepLinkIfNeeded() {
-        guard let name = DeepLinkRouter.consumePendingFamily() else { return }
-        let family = allFonts.first(where: { $0.id.caseInsensitiveCompare(name) == .orderedSame })
-            ?? FontFamily(id: name, displayName: name)
-        liftedFamilyId = family.id
-        if path.last?.id != family.id {
-            path.append(family)
+        switch navigator.pending {
+        case .font(let name):
+            _ = navigator.consume()
+            let family = allFonts.first { $0.id.caseInsensitiveCompare(name) == .orderedSame }
+                ?? FontFamily(id: name, displayName: name)
+            liftedFamilyId = family.id
+            if path.last?.id != family.id {
+                path.append(family)
+            }
+
+        case .search(let query):
+            _ = navigator.consume()
+            // Drop back to the list so the results are visible, then seed the
+            // existing search field — Fonti already owns the filtering.
+            path.removeAll()
+            model.input = query
+
+        case .saved, .none:
+            break
         }
     }
 }

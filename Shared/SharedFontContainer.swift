@@ -72,4 +72,21 @@ enum SharedFontContainer {
         guard let fileName else { return false }
         return register(fileName: fileName)
     }
+
+    /// Read a font file's family name straight off the file.
+    ///
+    /// Lets a process that can't reach the app's SwiftData store still work out
+    /// which families are imports — the files are shared, the records aren't.
+    static func familyName(forFileNamed fileName: String) -> String? {
+        guard
+            let url = url(for: fileName),
+            FileManager.default.fileExists(atPath: url.path),
+            let rawDescriptors = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL),
+            let descriptors = rawDescriptors as? [CTFontDescriptor],
+            let descriptor = descriptors.first,
+            let family = CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute) as? String,
+            !family.isEmpty
+        else { return nil }
+        return family
+    }
 }
