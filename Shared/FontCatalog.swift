@@ -122,6 +122,42 @@ enum FontCatalog {
         return order.compactMap { byName[$0.lowercased()] }
     }
 
+    /// Faces that look like this one, closest first.
+    ///
+    /// Deterministic and measured: classification gates the candidates, then
+    /// `FontMetrics` ranks what's left by measured proportions. No tags, no
+    /// model — Apple Intelligence understands the question, Fonti answers it.
+    ///
+    /// Pairings are deliberately *not* reused here. A pairing is chosen for
+    /// contrast — Georgia pairs with Helvetica Neue precisely because they
+    /// differ — so it's close to the opposite of similarity.
+    static func similarFonts(to familyName: String, limit: Int = 10) -> [CatalogFont] {
+        guard
+            let subject = font(named: familyName),
+            let subjectMetrics = FontMetricsProvider.metrics(for: subject.familyName)
+        else { return [] }
+
+        var scored: [(font: CatalogFont, distance: Double)] = []
+
+        for candidate in allFonts() {
+            guard candidate.familyName.caseInsensitiveCompare(subject.familyName) != .orderedSame,
+                  candidate.category.isComparable(with: subject.category),
+                  FontMetricsProvider.isLatinTextFace(candidate.familyName),
+                  let metrics = FontMetricsProvider.metrics(for: candidate.familyName)
+            else { continue }
+
+            scored.append((candidate, metrics.distance(to: subjectMetrics)))
+        }
+
+        scored.sort { lhs, rhs in
+            if lhs.distance != rhs.distance { return lhs.distance < rhs.distance }
+            return lhs.font.familyName.lowercased() < rhs.font.familyName.lowercased()
+        }
+
+        let ordered: [CatalogFont] = scored.map(\.font)
+        return Array(ordered.prefix(limit))
+    }
+
     /// Curated pairings for a family, limited to faces that are installed.
     static func pairings(for familyName: String) -> [CatalogFont] {
         let names = FontPairings.pairings(for: familyName)

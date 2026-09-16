@@ -44,6 +44,7 @@ final class FontiNavigator {
 enum FontiIntentError: Error, CustomLocalizedStringResourceConvertible {
     case fontUnavailable(String)
     case noPairings(String)
+    case noSimilarFonts(String)
     case sameFontTwice(String)
 
     var localizedStringResource: LocalizedStringResource {
@@ -52,6 +53,8 @@ enum FontiIntentError: Error, CustomLocalizedStringResourceConvertible {
             return "\(name) isn't available on this device."
         case .noPairings(let name):
             return "Fonti doesn't have a pairing for \(name) yet."
+        case .noSimilarFonts(let name):
+            return "Fonti couldn't find anything close to \(name) on this device."
         case .sameFontTwice(let name):
             return "Pick two different typefaces — both were \(name)."
         }
