@@ -1,6 +1,7 @@
-import Foundation
 import CoreText
+import Foundation
 import SwiftData
+import UIKit
 
 enum CustomFontError: LocalizedError {
     case invalidFont
@@ -67,6 +68,53 @@ enum CustomFontManager {
             CTFontManagerUnregisterFontsForURL(source as CFURL, .process, nil)
             try? manager.moveItem(at: source, to: destination)
         }
+    }
+
+    /// What a font file says about itself, read without installing it.
+    ///
+    /// Lets the confirmation sheet show the actual typeface before anything is
+    /// copied or registered — so "add this font?" shows the font.
+    struct Inspection {
+        var familyName: String
+        var styleName: String?
+        /// Already in the user's library.
+        var isDuplicate: Bool
+        /// Renders from the file on disk. Creating a font from a descriptor
+        /// doesn't register it process-wide — only
+        /// `CTFontManagerRegisterFontsForURL` does that — so previewing a file
+        /// leaves no trace if the user cancels.
+        var previewFont: UIFont
+    }
+
+    /// Read a font file's identity without importing it.
+    ///
+    /// Returns nil when the file isn't a font Core Text can parse, which is
+    /// also the cheapest way to reject something before showing any UI.
+    static func inspect(_ url: URL, in context: ModelContext) -> Inspection? {
+        let needsScope = url.startAccessingSecurityScopedResource()
+        defer {
+            if needsScope { url.stopAccessingSecurityScopedResource() }
+        }
+
+        guard
+            let rawDescriptors = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL),
+            let descriptors = rawDescriptors as? [CTFontDescriptor],
+            let descriptor = descriptors.first,
+            let familyName = CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute) as? String,
+            !familyName.isEmpty
+        else { return nil }
+
+        let query = FetchDescriptor<ImportedFont>(
+            predicate: #Predicate { $0.familyName == familyName }
+        )
+        let isDuplicate = !((try? context.fetch(query)) ?? []).isEmpty
+
+        return Inspection(
+            familyName: familyName,
+            styleName: CTFontDescriptorCopyAttribute(descriptor, kCTFontStyleNameAttribute) as? String,
+            isDuplicate: isDuplicate,
+            previewFont: CTFontCreateWithFontDescriptor(descriptor, 44, nil) as UIFont
+        )
     }
 
     /// Copy the file out of the picker URL into the sandbox, register it with

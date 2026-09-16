@@ -18,15 +18,36 @@ final class FontiNavigator {
     /// Set by intents and deep links; cleared once the UI has acted on it.
     private(set) var pending: FontiDestination?
 
+    /// A font file handed to Fonti from outside — Files, Mail, a share sheet.
+    ///
+    /// Separate from `pending` because it isn't a destination: nothing has been
+    /// imported yet, and the user still has to confirm.
+    private(set) var pendingFontFile: URL?
+
     private init() {}
 
     func go(to destination: FontiDestination) {
         pending = destination
     }
 
+    /// Route anything the system opens Fonti with.
+    ///
+    /// Two kinds arrive here: `fonti://` deep links, and font files from
+    /// `CFBundleDocumentTypes`. A file URL is offered for import rather than
+    /// imported outright — adding to someone's library off a single tap in
+    /// Files is too much to assume.
     func handle(_ url: URL) {
-        guard let destination = FontiDestination(url: url) else { return }
-        go(to: destination)
+        if let destination = FontiDestination(url: url) {
+            go(to: destination)
+            return
+        }
+        guard url.isFileURL else { return }
+        pendingFontFile = url
+    }
+
+    func consumeFontFile() -> URL? {
+        defer { pendingFontFile = nil }
+        return pendingFontFile
     }
 
     /// Take the pending destination, if any. Consuming clears it so a tab

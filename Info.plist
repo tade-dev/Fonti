@@ -15,6 +15,36 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Makes Fonti an option when sharing or opening a font file from Files,
+	     Mail, or anywhere else, instead of import being reachable only from
+	     inside Settings.
+
+	     Only .ttf and .otf are claimed. Collection formats (.ttc/.otc) hold
+	     several families in one file, and the importer reads just the first
+	     descriptor, so claiming them would promise more than it delivers.
+
+	     Role is Viewer because Fonti copies the file into its own library and
+	     never writes back to the original. Rank is Alternate — the system owns
+	     these types; Fonti is one of several things that can handle them. -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Font</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<!-- What .ttf actually resolves to. `public.truetype-font` alone
+				     does not match a .ttf file. -->
+				<string>public.truetype-ttf-font</string>
+				<string>public.opentype-font</string>
+				<string>public.truetype-font</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
