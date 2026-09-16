@@ -14,6 +14,12 @@ struct SavedFontsView: View {
     @Namespace private var cardNamespace
 
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
+    @AppStorage("fonti.savedLayout")    private var layoutRaw: String = FontCollectionLayout.grid.rawValue
+
+    private var layout: FontCollectionLayout {
+        get { FontCollectionLayout(rawValue: layoutRaw) ?? .grid }
+        nonmutating set { layoutRaw = newValue.rawValue }
+    }
 
     init(
         tabBarProgress: Binding<CGFloat> = .constant(0),
@@ -38,6 +44,15 @@ struct SavedFontsView: View {
             .background(Color.fontiInk.ignoresSafeArea())
             .navigationTitle("Saved")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .toolbar {
+                if !saved.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        FontCollectionLayoutToggle(
+                            layout: Binding(get: { layout }, set: { layout = $0 })
+                        )
+                    }
+                }
+            }
             .navigationDestination(for: FontFamily.self) { family in
                 FullScreenPreviewView(family: family, initialText: "")
                     .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
@@ -72,22 +87,30 @@ struct SavedFontsView: View {
     }
 
     private var grid: some View {
-        ScrollView {
-            StaggeredGrid(
+        // Built once per body evaluation; reading the computed property inside
+        // the cell closure would rebuild it for every card.
+        let indices = savedIndices
+
+        return ScrollView {
+            FontCollectionView(
                 items: saved,
-                columns: 2,
-                spacing: 14,
-                estimatedHeight: { SavedFontCard.Style.forFamily($0.familyName).minHeight }
-            ) { entry in
+                layout: layout,
+                spacing: 14
+            ) { (entry: SavedFont) in
                 let family = FontFamily(id: entry.familyName, displayName: entry.familyName)
-                let index = saved.firstIndex(where: { $0.id == entry.id }) ?? 0
+                let index = indices[entry.id] ?? 0
+                // Uniform rows in list mode; varied heights are what makes the
+                // grid a masonry.
+                let style: SavedFontCard.Style = layout == .list
+                    ? .compact
+                    : .forFamily(family.id)
 
                 SavedFontCard(
                     family: family,
                     isLifted: liftedFamilyId == family.id,
                     isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
                     namespace: cardNamespace,
-                    style: .forFamily(family.id)
+                    style: style
                 )
                 .contentShape(Rectangle())
                 .onTapGesture { tapped(family) }
@@ -99,7 +122,9 @@ struct SavedFontsView: View {
                     .smooth(duration: 0.7).delay(Double(min(index, 10)) * 0.06 + 0.12),
                     value: didAppear
                 )
-                .transition(.scale.combined(with: .opacity))
+                // Add/remove only — switching layout re-frames these cards
+                // rather than replacing them, so no transition runs for it.
+                .transition(.opacity)
                 .contextMenu {
                     Button(role: .destructive) { delete(entry) } label: {
                         Label("Remove", systemImage: "trash")
@@ -136,6 +161,13 @@ struct SavedFontsView: View {
             modelContext.delete(entry)
         }
     }
+
+    /// Position by persistent id, so the entrance stagger doesn't cost a linear
+    /// search per card.
+    private var savedIndices: [PersistentIdentifier: Int] {
+        Dictionary(uniqueKeysWithValues: saved.enumerated().map { ($0.element.id, $0.offset) })
+    }
+
 }
 
 #Preview("Empty") {

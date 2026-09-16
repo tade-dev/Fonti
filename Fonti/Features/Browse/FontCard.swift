@@ -7,6 +7,8 @@ struct FontCard: View {
     let isLifted: Bool
     let isDimmed: Bool
     let namespace: Namespace.ID
+    /// Half-width cell in the staggered grid — smaller specimen, tighter box.
+    let isCompact: Bool
     let onTap: () -> Void
 
     @Environment(\.modelContext) private var modelContext
@@ -19,6 +21,7 @@ struct FontCard: View {
         isLifted: Bool,
         isDimmed: Bool,
         namespace: Namespace.ID,
+        isCompact: Bool = false,
         onTap: @escaping () -> Void
     ) {
         self.family = family
@@ -26,6 +29,7 @@ struct FontCard: View {
         self.isLifted = isLifted
         self.isDimmed = isDimmed
         self.namespace = namespace
+        self.isCompact = isCompact
         self.onTap = onTap
         let name = family.id
         _matches = Query(
@@ -36,11 +40,13 @@ struct FontCard: View {
     private var isSaved: Bool { !matches.isEmpty }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: isCompact ? 10 : 14) {
             Text(displayText)
-                .font(.custom(family.id, size: 28))
+                .font(.custom(family.id, size: isCompact ? 20 : 28))
                 .foregroundStyle(Color.fontiCream)
-                .lineLimit(2)
+                // A narrow cell needs more lines to say the same thing.
+                .lineLimit(isCompact ? 3 : 2)
+                .minimumScaleFactor(isCompact ? 0.7 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .id(displayText)
                 .transition(.opacity)
@@ -55,9 +61,11 @@ struct FontCard: View {
                 }
                 Text(family.displayName.uppercased())
                     .font(.caption2)
-                    .tracking(1.2)
+                    .tracking(isCompact ? 0.8 : 1.2)
                     .foregroundStyle(Color.fontiCream.opacity(0.65))
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 4)
                 Button(action: toggleSaved) {
                     Image(systemName: isSaved ? "heart.fill" : "heart")
                         .foregroundStyle(isSaved ? Color.fontiAmber : Color.fontiCream.opacity(0.65))
@@ -67,9 +75,9 @@ struct FontCard: View {
                 .accessibilityLabel(isSaved ? "Remove from Saved" : "Save font")
             }
         }
-        .padding(18)
+        .padding(isCompact ? 14 : 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(in: .rect(cornerRadius: 22))
+        .glassEffect(in: .rect(cornerRadius: isCompact ? 18 : 22))
         .matchedTransitionSource(id: family.id, in: namespace)
         .cardLift(isLifted: isLifted, isDimmed: isDimmed)
         .contentShape(Rectangle())
