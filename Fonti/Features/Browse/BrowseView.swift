@@ -15,6 +15,19 @@ struct BrowseView: View {
 
     @AppStorage("fonti.defaultSampleText") private var defaultSampleText: String = ""
     @AppStorage("fonti.hapticsEnabled")    private var hapticsEnabled: Bool = true
+    @AppStorage("fonti.browseLayout")      private var layoutRaw: String = FontCollectionLayout.list.rawValue
+
+    /// Built once per imports change rather than on every body evaluation —
+    /// it filters, maps and sorts every installed family.
+    @State private var allFonts: [FontFamily] = []
+    /// Position by family id, so the entrance stagger doesn't cost a linear
+    /// search per card.
+    @State private var fontIndices: [String: Int] = [:]
+
+    private var layout: FontCollectionLayout {
+        get { FontCollectionLayout(rawValue: layoutRaw) ?? .list }
+        nonmutating set { layoutRaw = newValue.rawValue }
+    }
 
     init(
         tabBarProgress: Binding<CGFloat> = .constant(0),
@@ -24,7 +37,7 @@ struct BrowseView: View {
         _hideFloatingTabBar = hideFloatingTabBar
     }
 
-    private var allFonts: [FontFamily] {
+    private func rebuildFonts() {
         // Core Text registration makes imported fonts also appear in
         // UIFont.familyNames — strip the system duplicate so each family
         // shows up exactly once (with isImported=true winning, so the
@@ -35,31 +48,40 @@ struct BrowseView: View {
         let imported = imports.map {
             FontFamily(id: $0.familyName, displayName: $0.familyName, isImported: true)
         }
-        return (system + imported).sorted { $0.id.lowercased() < $1.id.lowercased() }
+        let sorted = (system + imported).sorted { $0.id.lowercased() < $1.id.lowercased() }
+        allFonts = sorted
+        fontIndices = Dictionary(
+            uniqueKeysWithValues: sorted.enumerated().map { ($0.element.id, $0.offset) }
+        )
     }
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                LazyVStack(spacing: 14) {
-                    ForEach(Array(allFonts.enumerated()), id: \.element.id) { index, family in
-                        FontCard(
-                            family: family,
-                            displayText: model.displayText(for: family, fallback: defaultSampleText),
-                            isLifted: liftedFamilyId == family.id,
-                            isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
-                            namespace: cardNamespace,
-                            onTap: { tapped(family) }
-                        )
-                        .opacity(didAppear ? 1 : 0)
-                        .blur(radius: didAppear ? 0 : 8)
-                        .offset(y: didAppear ? 0 : 60)
-                        .scaleEffect(didAppear ? 1 : 0.92)
-                        .animation(
-                            .smooth(duration: 0.75).delay(Double(min(index, 8)) * 0.08 + 0.2),
-                            value: didAppear
-                        )
-                    }
+                FontCollectionView(
+                    items: allFonts,
+                    layout: layout,
+                    spacing: 14
+                ) { family in
+                    let index = fontIndices[family.id] ?? 0
+
+                    FontCard(
+                        family: family,
+                        displayText: model.displayText(for: family, fallback: defaultSampleText),
+                        isLifted: liftedFamilyId == family.id,
+                        isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
+                        namespace: cardNamespace,
+                        isCompact: layout == .grid,
+                        onTap: { tapped(family) }
+                    )
+                    .opacity(didAppear ? 1 : 0)
+                    .blur(radius: didAppear ? 0 : 8)
+                    .offset(y: didAppear ? 0 : 60)
+                    .scaleEffect(didAppear ? 1 : 0.92)
+                    .animation(
+                        .smooth(duration: 0.75).delay(Double(min(index, 8)) * 0.08 + 0.2),
+                        value: didAppear
+                    )
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -94,10 +116,14 @@ struct BrowseView: View {
                     .animation(.smooth(duration: 0.6).delay(0.1), value: didAppear)
             }
             .task(id: "browse-enter") {
+                rebuildFonts()
                 guard !didAppear else { return }
                 try? await Task.sleep(for: .milliseconds(60))
                 didAppear = true
                 openPendingDeepLinkIfNeeded()
+            }
+            .onChange(of: imports.count) { _, _ in
+                rebuildFonts()
             }
             .onReceive(NotificationCenter.default.publisher(for: .fontiConsumeDeepLink)) { _ in
                 openPendingDeepLinkIfNeeded()
@@ -105,6 +131,13 @@ struct BrowseView: View {
             .navigationTitle("Fonti")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    FontCollectionLayoutToggle(
+                        layout: Binding(get: { layout }, set: { layout = $0 })
+                    )
+                }
+            }
         }
     }
 

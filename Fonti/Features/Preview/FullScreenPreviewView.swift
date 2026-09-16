@@ -29,9 +29,6 @@ struct FullScreenPreviewView: View {
     @State private var isMorphing = false
     @State private var isSwitchingLayout = false
 
-    @State private var historyEntries: [String] = PreviewTextHistory.load()
-    @State private var historyIndex: Int = 0
-
     @AppStorage("fonti.specimenTemplate") private var templateRaw: String = SpecimenTemplate.wordmark.rawValue
     @AppStorage("fonti.hapticsEnabled") private var hapticsEnabled: Bool = true
     @AppStorage("fonti.typewriterHapticsEnabled") private var typewriterHapticsEnabled: Bool = true
@@ -113,18 +110,6 @@ struct FullScreenPreviewView: View {
                 .frame(maxHeight: showComposer ? 148 : geo.size.height * 0.40)
 
                 if !showComposer {
-                    HistoryScrubBar(
-                        entries: historyEntries,
-                        currentText: previewText,
-                        selectedIndex: $historyIndex,
-                        onSelect: { entry in
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                text = entry
-                            }
-                        }
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-
                     TemplateChipStrip(selection: template) { chosen in
                         switchLayout(to: chosen)
                     }
@@ -204,7 +189,6 @@ struct FullScreenPreviewView: View {
             snapPointSize(newSize)
         }
         .onAppear {
-            syncHistorySelectionToCurrentText()
             TypewriterHaptics.prepare()
             WidgetPublisher.publish(family: family, sampleText: previewText)
         }
@@ -223,17 +207,6 @@ struct FullScreenPreviewView: View {
         snap.disablesAnimations = true
         withTransaction(snap) {
             livePointSize = value
-        }
-    }
-
-    private func syncHistorySelectionToCurrentText() {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let match = historyEntries.firstIndex(where: {
-            $0.caseInsensitiveCompare(trimmed) == .orderedSame
-        }) {
-            historyIndex = match
-        } else {
-            historyIndex = 0
         }
     }
 
@@ -273,7 +246,7 @@ struct FullScreenPreviewView: View {
     private func applySuggestedCopyIfNeeded(for template: SpecimenTemplate) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let replaceable = trimmed.isEmpty
-            || PreviewTextHistory.seeds.contains { $0.caseInsensitiveCompare(trimmed) == .orderedSame }
+            || PreviewTextSeeds.contains(trimmed)
             || SpecimenTemplate.allCases.contains { $0.suggestedCopy.caseInsensitiveCompare(trimmed) == .orderedSame }
 
         guard replaceable else { return }
@@ -326,13 +299,6 @@ struct FullScreenPreviewView: View {
     private func endEditing() {
         guard showComposer, !isMorphing else { return }
         composerFocused = false
-
-        // Remember what they wrote (skip pure font-name fallback if field empty).
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            historyEntries = PreviewTextHistory.push(trimmed)
-            historyIndex = 0
-        }
 
         runMorph(toEditing: false)
     }
