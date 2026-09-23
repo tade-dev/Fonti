@@ -55,8 +55,6 @@ struct SettingsView: View {
         .dismissKeyboardOnBackgroundTap()
         .foregroundStyle(Color.fontiCream)
         .tint(.fontiAmber)
-        .hideNativeTabBar()
-        .safeAreaPadding(.bottom, 50)
         .navigationTitle("Settings")
         .toolbarTitleDisplayMode(.inlineLarge)
         .alert("Clear all saved fonts?", isPresented: $confirmClear) {

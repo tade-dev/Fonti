@@ -2,9 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct BrowseView: View {
-    @Binding var tabBarProgress: CGFloat
-    @Binding var hideFloatingTabBar: Bool
-
     private var navigator = FontiNavigator.shared
 
     @State private var model = BrowseModel()
@@ -29,14 +26,6 @@ struct BrowseView: View {
     private var layout: FontCollectionLayout {
         get { FontCollectionLayout(rawValue: layoutRaw) ?? .list }
         nonmutating set { layoutRaw = newValue.rawValue }
-    }
-
-    init(
-        tabBarProgress: Binding<CGFloat> = .constant(0),
-        hideFloatingTabBar: Binding<Bool> = .constant(false)
-    ) {
-        _tabBarProgress = tabBarProgress
-        _hideFloatingTabBar = hideFloatingTabBar
     }
 
     private func rebuildFonts() {
@@ -86,9 +75,7 @@ struct BrowseView: View {
                     )
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, FloatingTabBar.contentClearance)
             }
-            .adoptForIGTabBar($tabBarProgress)
             .scrollDismissesKeyboard(.immediately)
             .background(Color.fontiInk.ignoresSafeArea())
             .dismissKeyboardOnBackgroundTap()
@@ -96,9 +83,10 @@ struct BrowseView: View {
                 FullScreenPreviewView(family: family, initialText: model.input)
                     .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
                     .environment(\.cardNamespace, cardNamespace)
+                    // The specimen is the whole screen; the bar would compete.
+                    .toolbarVisibility(.hidden, for: .tabBar)
             }
             .onChange(of: path) { _, newPath in
-                hideFloatingTabBar = !newPath.isEmpty
                 if newPath.isEmpty {
                     withAnimation(.easeOut(duration: 0.25)) {
                         liftedFamilyId = nil

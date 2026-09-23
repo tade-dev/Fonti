@@ -10,8 +10,6 @@ struct RootView: View {
     private var navigator = FontiNavigator.shared
 
     @State private var activeTab: FontiTab = .browse
-    @State private var progress: CGFloat = 0
-    @State private var hideFloatingTabBar = false
     /// Compare is presented here rather than from the preview screen so an
     /// intent can open it directly, without first navigating into a font.
     @State private var compareSession: CompareSession?
@@ -30,48 +28,29 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $activeTab) {
-            
-            Tab(value: .browse) {
-                BrowseView(tabBarProgress: $progress, hideFloatingTabBar: $hideFloatingTabBar)
+
+            Tab(FontiTab.browse.title, systemImage: FontiTab.browse.symbolImage, value: .browse) {
+                BrowseView()
             }
 
-            Tab(value: .saved) {
-                SavedFontsView(tabBarProgress: $progress, hideFloatingTabBar: $hideFloatingTabBar)
+            Tab(FontiTab.saved.title, systemImage: FontiTab.saved.symbolImage, value: .saved) {
+                SavedFontsView()
             }
 
-            Tab(value: .settings) {
+            Tab(FontiTab.settings.title, systemImage: FontiTab.settings.symbolImage, value: .settings) {
                 NavigationStack {
                     SettingsView()
-                        .hideNativeTabBar()
                 }
             }
 
         }
+        // The system bar, not a hand-rolled one: on iPhone Duo it relocates to
+        // the vertical strip on the trailing edge, carrying the status bar and
+        // Dynamic Island with it. Reimplementing that — plus overflow,
+        // visibility priority and Split View edge-flipping — is not worth it.
+        .tint(.fontiAmber)
+        .tabBarMinimizeBehavior(.onScrollDown)
         .preferredColorScheme(.dark)
-        .overlay {
-            if !hideFloatingTabBar {
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    IGStyleTabBar(selection: $activeTab) { tab in
-                        let image = UIImage(systemName: tab.symbolImage)?
-                            .withConfiguration(UIImage.SymbolConfiguration(font: .systemFont(ofSize: 20)))
-                        return image!
-                    } onInteraction: {
-                        if progress != 0 {
-                            withAnimation(.smooth(duration: 0.45)) {
-                                progress = 0
-                            }
-                        }
-                    }
-                    .padding(FloatingTabBar.capsuleInset)
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .scaleEffect(1 - (progress * 0.15), anchor: .bottom)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, FloatingTabBar.bottomInset)
-                }
-                .ignoresSafeArea(.container, edges: .bottom)
-            }
-        }
         .task {
             let imports = (try? modelContext.fetch(FetchDescriptor<ImportedFont>())) ?? []
             CustomFontManager.registerAll(imports)
