@@ -35,7 +35,7 @@ struct SavedFontsView: View {
                 if saved.isEmpty {
                     emptyState
                         .hideNativeTabBar()
-                        .safeAreaPadding(.bottom, 50)
+                        .safeAreaPadding(.bottom, FloatingTabBar.contentClearance)
                 } else {
                     grid
                 }
@@ -133,7 +133,7 @@ struct SavedFontsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .padding(.bottom, 70)
+            .padding(.bottom, FloatingTabBar.contentClearance)
         }
         .adoptForIGTabBar($tabBarProgress)
     }

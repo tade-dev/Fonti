@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+/// Geometry of the floating tab bar `RootView` overlays on Browse and Saved.
+///
+/// The bar is an overlay, not a `safeAreaInset`, so SwiftUI reserves no room
+/// for it and scrolling content has to leave that room itself. Browse was
+/// leaving 24pt against a bar that stands 80pt off the screen edge, which put
+/// the last card underneath it — visible as a clipped row on any screen short
+/// enough that the list ends on-screen.
+enum FloatingTabBar {
+    /// Height of the segmented control itself, per `sizeThatFits` below.
+    static let height: CGFloat = 50
+    /// Padding between the control and its glass capsule.
+    static let capsuleInset: CGFloat = 4
+    /// How far the capsule floats above the bottom screen edge.
+    static let bottomInset: CGFloat = 22
+
+    /// Bottom room scrolling content must leave clear to stay out from under
+    /// the bar. Measured from the screen edge, so on devices with a home
+    /// indicator this is slightly generous — which costs a little scroll
+    /// overscroll and never clips a card.
+    static let contentClearance: CGFloat = height + capsuleInset * 2 + bottomInset
+}
+
 extension View {
     @ViewBuilder
     func hideNativeTabBar() -> some View {

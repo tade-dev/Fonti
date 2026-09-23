@@ -86,7 +86,7 @@ struct BrowseView: View {
                     )
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .padding(.bottom, FloatingTabBar.contentClearance)
             }
             .adoptForIGTabBar($tabBarProgress)
             .scrollDismissesKeyboard(.immediately)

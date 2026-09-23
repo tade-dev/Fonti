@@ -29,76 +29,81 @@ struct OnboardingView: View {
             BottomShelfGradient()
                 .allowsHitTesting(false)
 
-            VStack(spacing: 0) {
-                Spacer(minLength: 60)
+            GeometryReader { proxy in
+                let metrics = OnboardingMetrics(height: proxy.size.height)
 
-                InfiniteScrollView(spacing: cardSpacing) {
-                    ForEach(cards) { card in
-                        carouselCard(card)
+                VStack(spacing: 0) {
+                    Spacer(minLength: metrics.aboveCarousel)
+
+                    InfiniteScrollView(spacing: cardSpacing) {
+                        ForEach(cards) { card in
+                            carouselCard(card)
+                        }
                     }
-                }
-                .scrollIndicators(.hidden)
-                .scrollPosition($scrollPosition)
-                .scrollClipDisabled()
-                .containerRelativeFrame(.vertical) { value, _ in value * 0.38 }
-                .onScrollPhaseChange { _, newPhase in
-                    scrollPhase = newPhase
-                }
-                .onScrollGeometryChange(for: CGFloat.self) {
-                    $0.contentOffset.x + $0.contentInsets.leading
-                } action: { _, newValue in
-                    currentScrollOffset = newValue
-
-                    if scrollPhase != .decelerating || scrollPhase != .animating {
-                        let stride = cardWidth + cardSpacing
-                        let activeIndex = Int((currentScrollOffset / stride).rounded()) % cards.count
-                        let safeIndex = (activeIndex + cards.count) % cards.count
-                        activeCard = cards[safeIndex]
+                    .scrollIndicators(.hidden)
+                    .scrollPosition($scrollPosition)
+                    .scrollClipDisabled()
+                    .frame(height: metrics.carouselHeight)
+                    .onScrollPhaseChange { _, newPhase in
+                        scrollPhase = newPhase
                     }
+                    .onScrollGeometryChange(for: CGFloat.self) {
+                        $0.contentOffset.x + $0.contentInsets.leading
+                    } action: { _, newValue in
+                        currentScrollOffset = newValue
+
+                        if scrollPhase != .decelerating || scrollPhase != .animating {
+                            let stride = cardWidth + cardSpacing
+                            let activeIndex = Int((currentScrollOffset / stride).rounded()) % cards.count
+                            let safeIndex = (activeIndex + cards.count) % cards.count
+                            activeCard = cards[safeIndex]
+                        }
+                    }
+                    .visualEffect { [initialAnimation] content, proxy in
+                        content
+                            .offset(y: !initialAnimation ? -(proxy.size.height + 200) : 0)
+                    }
+
+                    Spacer(minLength: metrics.belowCarousel)
+
+                    VStack(spacing: 8) {
+                        Text("Welcome to")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Color.fontiCream.opacity(0.75))
+                            .blurOpacityEffect(initialAnimation)
+
+                        Text("Fonti")
+                            .font(.system(size: 56, weight: .bold))
+                            .foregroundStyle(Color.fontiCream)
+                            .textRenderer(TitleTextRenderer(progress: titleProgress))
+                            .padding(.bottom, 14)
+
+                        Text("Every font on your device, live.\nPair, preview, and keep the ones you love.")
+                            .font(.title3)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(Color.fontiCream.opacity(0.7))
+                            .blurOpacityEffect(initialAnimation)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.5)
+                    }
+
+                    Spacer(minLength: metrics.aboveButton)
+
+                    Button(action: onComplete) {
+                        Text("Get Started")
+                            .foregroundStyle(.black)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(.fontiAmber)
+                    .controlSize(.large)
+                    .padding(.horizontal, 8)
+                    .blurOpacityEffect(initialAnimation)
+
+                    Spacer(minLength: metrics.belowButton)
                 }
-                .visualEffect { [initialAnimation] content, proxy in
-                    content
-                        .offset(y: !initialAnimation ? -(proxy.size.height + 200) : 0)
-                }
-
-                Spacer(minLength: 80)
-
-                VStack(spacing: 8) {
-                    Text("Welcome to")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(Color.fontiCream.opacity(0.75))
-                        .blurOpacityEffect(initialAnimation)
-
-                    Text("Fonti")
-                        .font(.system(size: 56, weight: .bold))
-                        .foregroundStyle(Color.fontiCream)
-                        .textRenderer(TitleTextRenderer(progress: titleProgress))
-                        .padding(.bottom, 14)
-
-                    Text("Every font on your device, live.\nPair, preview, and keep the ones you love.")
-                        .font(.title3)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.fontiCream.opacity(0.7))
-                        .blurOpacityEffect(initialAnimation)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.5)
-                }
-
-                Spacer(minLength: 40)
-
-                Button(action: onComplete) {
-                    Text("Get Started")
-                        .foregroundStyle(.black)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(.fontiAmber)
-                .controlSize(.large)
-                .padding(.horizontal, 8)
-                .blurOpacityEffect(initialAnimation)
-
-                Spacer(minLength: 32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .safeAreaPadding(15)
         }
@@ -193,6 +198,46 @@ struct OnboardingView: View {
                 .offset(y: phase == .identity ? -10 : 0)
                 .rotationEffect(.degrees(phase.value * 5), anchor: .bottom)
         }
+    }
+}
+
+/// The vertical budget onboarding has to live inside.
+///
+/// Every element here is fixed-size and nothing scrolls, so the screen either
+/// fits or SwiftUI compresses it from the top down — clipping the carousel off
+/// the top edge and squeezing the headline to nothing. The old numbers (four
+/// fixed spacers totalling 212pt, plus a carousel at 38% of the *screen*)
+/// needed roughly 850pt of container. iPhone has it; iPhone Duo's cover panel,
+/// at 678pt tall, does not.
+///
+/// So both scale with the room actually available. Whitespace scales harder
+/// than the carousel does, on the principle that empty space should yield
+/// before content does.
+private struct OnboardingMetrics {
+    /// Available height on a full-size iPhone once safe areas and the 15pt
+    /// `safeAreaPadding` are taken off — the height the original numbers were
+    /// tuned against. At or above this, nothing shrinks.
+    static let referenceHeight: CGFloat = 729
+
+    let carouselHeight: CGFloat
+    let aboveCarousel: CGFloat
+    let belowCarousel: CGFloat
+    let aboveButton: CGFloat
+    let belowButton: CGFloat
+
+    init(height: CGFloat) {
+        // Floored so a very short container still shows a real carousel
+        // rather than collapsing it to a sliver.
+        let scale = min(1, max(0.62, height / Self.referenceHeight))
+        let spacerScale = scale * scale
+
+        // 0.44 of the available height reproduces the original 38%-of-screen
+        // carousel on a full-size iPhone.
+        carouselHeight = height * 0.44 * scale
+        aboveCarousel = 60 * spacerScale
+        belowCarousel = 80 * spacerScale
+        aboveButton = 40 * spacerScale
+        belowButton = 32 * spacerScale
     }
 }
 

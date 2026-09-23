@@ -63,11 +63,11 @@ struct RootView: View {
                             }
                         }
                     }
-                    .padding(4)
+                    .padding(FloatingTabBar.capsuleInset)
                     .glassEffect(.regular.interactive(), in: .capsule)
                     .scaleEffect(1 - (progress * 0.15), anchor: .bottom)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, FloatingTabBar.bottomInset)
                 }
                 .ignoresSafeArea(.container, edges: .bottom)
             }
