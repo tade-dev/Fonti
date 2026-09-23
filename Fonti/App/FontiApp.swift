@@ -56,7 +56,12 @@ struct FontiApp: App {
     // reminder so it always sits 5 days past the user's most recent session,
     // and — once, after onboarding — requests notification permission.
     private func handleActive() {
-        NotificationScheduler.rescheduleEngagementReminder()
+        // Detached, not `Task { }`: this target defaults to MainActor
+        // isolation, so an inherited-context task would still run the blocking
+        // XPC call on the main thread.
+        Task.detached(priority: .utility) {
+            NotificationScheduler.rescheduleEngagementReminder()
+        }
         guard hasCompletedOnboarding, !hasRequestedNotifications else { return }
         hasRequestedNotifications = true
         Task { _ = await NotificationScheduler.requestPermissionIfNeeded() }

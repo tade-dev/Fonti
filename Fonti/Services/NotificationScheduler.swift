@@ -8,7 +8,19 @@
 import Foundation
 import UserNotifications
 
-enum NotificationScheduler {
+/// `nonisolated` because the target builds with `SWIFT_DEFAULT_ACTOR_ISOLATION
+/// = MainActor`, which would otherwise pin every call below to the main thread.
+/// That matters because `removePendingNotificationRequests` and `add` are not
+/// the fire-and-forget calls they look like — both make a *synchronous* XPC
+/// round-trip to `usernotificationsd`, and the wait has no timeout. On a cold
+/// boot that daemon may not be answering yet, so running these on the main
+/// thread freezes the whole app before it draws its first frame: no splash
+/// animation, no `Task.sleep` ever resuming, no recovery.
+///
+/// Nothing here holds state and `UNUserNotificationCenter` is thread-safe, so
+/// the isolation bought nothing anyway. Callers must keep these off the main
+/// actor — see `FontiApp.handleActive()`.
+nonisolated enum NotificationScheduler {
     static let engagementRequestId = "fonti.notification.engagement"
     static let defaultEngagementDays: Int = 5
 
