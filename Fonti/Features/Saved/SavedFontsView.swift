@@ -3,10 +3,11 @@ import SwiftData
 
 struct SavedFontsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query(sort: \SavedFont.savedAt, order: .reverse) private var saved: [SavedFont]
 
     @State private var liftedFamilyId: String?
-    @State private var path: [FontFamily] = []
+    @State private var selection: FontFamily?
     @State private var didAppear = false
     @Namespace private var cardNamespace
 
@@ -19,58 +20,107 @@ struct SavedFontsView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if saved.isEmpty {
-                    emptyState
-                } else {
-                    grid
-                }
+        // Mirrors BrowseView: the collapse a single NavigationSplitView would
+        // do at compact width depends on a List-driven selection, and these are
+        // custom cards, so the compact path stays an explicit NavigationStack.
+        if horizontalSizeClass == .regular {
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                detail
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.fontiInk.ignoresSafeArea())
-            .navigationTitle("Saved")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbar {
-                if !saved.isEmpty {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        FontCollectionLayoutToggle(
-                            layout: Binding(get: { layout }, set: { layout = $0 })
-                        )
+        } else {
+            NavigationStack(path: pathBinding) {
+                sidebar
+                    .navigationDestination(for: FontFamily.self) { family in
+                        specimen(for: family)
                     }
-                }
             }
-            .navigationDestination(for: FontFamily.self) { family in
-                FullScreenPreviewView(family: family, initialText: "")
-                    .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
-                    .environment(\.cardNamespace, cardNamespace)
-                    .toolbarVisibility(.hidden, for: .tabBar)
+        }
+    }
+
+    private var pathBinding: Binding<[FontFamily]> {
+        Binding(
+            get: { selection.map { [$0] } ?? [] },
+            set: { selection = $0.last }
+        )
+    }
+
+    private var sidebar: some View {
+        Group {
+            if saved.isEmpty {
+                emptyState
+            } else {
+                grid
             }
-            .onChange(of: path) { _, newPath in
-                if newPath.isEmpty {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        liftedFamilyId = nil
-                    }
-                }
-            }
-            .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
-                (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
-            }
-            .task(id: "saved-enter") {
-                guard !didAppear, !saved.isEmpty else { return }
-                try? await Task.sleep(for: .milliseconds(40))
-                didAppear = true
-            }
-            .onChange(of: saved.count) { _, count in
-                // First heart from empty → play the cascade once.
-                if count > 0, !didAppear {
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(40))
-                        didAppear = true
-                    }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.fontiInk.ignoresSafeArea())
+        .navigationTitle("Saved")
+        .toolbarTitleDisplayMode(.inlineLarge)
+        .toolbar {
+            if !saved.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    FontCollectionLayoutToggle(
+                        layout: Binding(get: { layout }, set: { layout = $0 })
+                    )
                 }
             }
         }
+        .onChange(of: selection) { _, newValue in
+            if newValue == nil {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    liftedFamilyId = nil
+                }
+            }
+        }
+        .sensoryFeedback(trigger: liftedFamilyId) { _, newValue in
+            (hapticsEnabled && newValue != nil) ? .impact(weight: .light) : nil
+        }
+        .task(id: "saved-enter") {
+            guard !didAppear, !saved.isEmpty else { return }
+            try? await Task.sleep(for: .milliseconds(40))
+            didAppear = true
+        }
+        .onChange(of: saved.count) { _, count in
+            // First heart from empty → play the cascade once.
+            if count > 0, !didAppear {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(40))
+                    didAppear = true
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        if let family = selection {
+            specimen(for: family)
+        } else {
+            ZStack {
+                Color.fontiInk.ignoresSafeArea()
+                // Suppressed on an empty library: the sidebar is already saying
+                // "Heart a font to keep it here", and two prompts is one too many.
+                if !saved.isEmpty {
+                    Text("Pick a typeface.")
+                        .font(.title3)
+                        .foregroundStyle(Color.fontiCream.opacity(0.4))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func specimen(for family: FontFamily) -> some View {
+        FullScreenPreviewView(family: family, initialText: "")
+            .id(family.id)
+            .navigationTransition(.zoom(sourceID: family.id, in: cardNamespace))
+            .environment(\.cardNamespace, cardNamespace)
+            .toolbarVisibility(
+                horizontalSizeClass == .compact ? .hidden : .automatic,
+                for: .tabBar
+            )
     }
 
     private var grid: some View {
@@ -95,7 +145,8 @@ struct SavedFontsView: View {
                 SavedFontCard(
                     family: family,
                     isLifted: liftedFamilyId == family.id,
-                    isDimmed: liftedFamilyId != nil && liftedFamilyId != family.id,
+                    isDimmed: horizontalSizeClass == .compact
+                        && liftedFamilyId != nil && liftedFamilyId != family.id,
                     namespace: cardNamespace,
                     style: style
                 )
@@ -137,11 +188,17 @@ struct SavedFontsView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
-            path.append(family)
+            selection = family
         }
     }
 
     private func delete(_ entry: SavedFont) {
+        // The split view keeps showing whatever is selected, so removing the
+        // selected face would leave its specimen on screen with nothing in the
+        // list behind it.
+        if selection?.id == entry.familyName {
+            selection = nil
+        }
         withAnimation(.snappy(duration: 0.25)) {
             modelContext.delete(entry)
         }
