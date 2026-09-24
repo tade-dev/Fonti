@@ -26,6 +26,15 @@ struct SavedFontsView: View {
         if horizontalSizeClass == .regular {
             NavigationSplitView {
                 sidebar
+                    // A tight range, because `ideal` is only a hint: given
+                    // min 340 / max 480 the system picked 456 and ignored an
+                    // ideal of 400. min/max are what actually bind.
+                    //
+                    // 400pt keeps a two-column card at ~177pt, within 4pt of
+                    // the 173.5pt it gets full-width on a normal iPhone, so
+                    // cards don't shrink just because there's more screen. At
+                    // 280 the names truncate; the detail still gets 551pt.
+                    .navigationSplitViewColumnWidth(min: 390, ideal: 400, max: 410)
             } detail: {
                 detail
             }
