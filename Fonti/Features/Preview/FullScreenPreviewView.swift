@@ -15,8 +15,6 @@ struct FullScreenPreviewView: View {
     @State private var leading: CGFloat = 4
     @State private var showComposer: Bool = false
     @State private var compareSession: CompareSession?
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @FocusState private var composerFocused: Bool
 
     @State private var background: PreviewBackground = .ink
@@ -70,12 +68,12 @@ struct FullScreenPreviewView: View {
     var body: some View {
         GeometryReader { geo in
             Group {
-                if isWide && !showComposer {
+                if AdaptiveLayout.detailPrefersSideColumn(geo.size) && !showComposer {
                     // Regular width: hero specimen ~2/3, settings column on the right.
                     HStack(spacing: 0) {
                         specimenHero
                             .padding(16)
-                            .frame(width: geo.size.width * 0.64)
+                            .frame(maxWidth: .infinity)
 
                         HairlineDivider()
                             .padding(.vertical, 16)
@@ -93,7 +91,7 @@ struct FullScreenPreviewView: View {
                             previewControls
                                 .padding([.horizontal, .bottom], 16)
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(width: AdaptiveLayout.sideColumnWidth(for: geo.size.width))
                     }
                     .transition(.opacity)
                 } else {
@@ -123,7 +121,7 @@ struct FullScreenPreviewView: View {
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-            .animation(AdaptiveLayout.transition, value: isWide)
+            .animation(AdaptiveLayout.transition, value: AdaptiveLayout.detailPrefersSideColumn(geo.size))
         }
         .background(Color.fontiInk.ignoresSafeArea())
         .navigationTitle(family.displayName)
@@ -183,15 +181,15 @@ struct FullScreenPreviewView: View {
 
     // MARK: - Adaptive pieces
 
-    private var isWide: Bool {
-        AdaptiveLayout.isWide(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
-    }
 
     /// Full-bleed poster canvas; type scales with the canvas so the slider
     /// stays relative to the space it has.
     private var specimenHero: some View {
         GeometryReader { canvas in
             let canvasScale = showComposer ? 1 : AdaptiveLayout.canvasScale(for: canvas.size)
+            let heroSize = AdaptiveLayout.fittedPointSize(
+                layoutPointSize * canvasScale, text: previewText, width: canvas.size.width - 56
+            )
             SpecimenCard(
                     background: background,
                     customImage: customImage,
@@ -216,8 +214,8 @@ struct FullScreenPreviewView: View {
                                 template: template,
                                 text: previewText,
                                 familyName: family.displayName,
-                                pointSize: layoutPointSize * canvasScale,
-                                font: styledFont(size: layoutPointSize * canvasScale),
+                                pointSize: heroSize,
+                                font: styledFont(size: heroSize),
                                 color: background.glyphColor,
                                 secondary: background.secondaryGlyphColor,
                                 animates: glyphAnimationEnabled,

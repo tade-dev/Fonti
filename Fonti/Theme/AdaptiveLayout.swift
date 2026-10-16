@@ -14,6 +14,37 @@ enum AdaptiveLayout {
         horizontal == .regular || vertical == .compact
     }
 
+    /// Geometry, not size classes, decides the arrangement. Size classes
+    /// flip at awkward points on iPhone Duo (unfolded portrait is regular
+    /// width yet taller than wide), so each posture is judged by its shape.
+    ///
+    /// Compare: side by side only when the container is wider than tall;
+    /// otherwise stack top/bottom so each pane gets the long axis.
+    static func comparePrefersSideBySide(_ size: CGSize) -> Bool {
+        size.width >= 560 && size.width >= size.height
+    }
+
+    /// Detail: a settings column only when landscape-shaped and wide enough
+    /// for the hero plus a usable column.
+    static func detailPrefersSideColumn(_ size: CGSize) -> Bool {
+        size.width >= 700 && size.width > size.height
+    }
+
+    /// Settings column width: fixed band so the hero never gets squeezed
+    /// and the column never collapses.
+    static func sideColumnWidth(for width: CGFloat) -> CGFloat {
+        min(max(width * 0.36, 300), 380)
+    }
+
+    /// Clamp a point size so the longest word fits on one line of `width`,
+    /// so wordmarks never break mid-word ("Ty / pewriter").
+    static func fittedPointSize(_ size: CGFloat, text: String, width: CGFloat) -> CGFloat {
+        let longest = text.split(whereSeparator: { $0 == " " || $0 == "\n" })
+            .map(\.count).max() ?? 1
+        let maxSize = width / (CGFloat(max(longest, 1)) * 0.62)
+        return max(min(size, maxSize), 12)
+    }
+
     /// The one curve layout switches (compact ⇄ wide) animate on.
     static let transition = Animation.smooth(duration: 0.35)
 

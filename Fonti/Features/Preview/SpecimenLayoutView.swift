@@ -27,6 +27,20 @@ struct SpecimenLayoutView: View {
                 )
             } else {
                 switch template {
+                case .wordmark where !animates:
+                    // At rest: real text layout so lines break by word and the
+                    // whole wordmark scales down to fit, instead of the glyph
+                    // flow wrapping mid-word ("American Ty / pewriter").
+                    Text(text)
+                        .font(font)
+                        .tracking(tracking)
+                        .lineSpacing(leading)
+                        .foregroundStyle(color)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
                 case .wordmark:
                     AnimatedSpecimenText(
                         text: text,
