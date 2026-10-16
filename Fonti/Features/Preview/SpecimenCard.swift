@@ -8,6 +8,9 @@ struct SpecimenCard<Content: View>: View {
     let rotationY: Double
     var isFlipping: Bool = false
     var compact: Bool = false
+    /// Fill the offered space edge to edge (hero canvas) instead of holding
+    /// the board aspect ratio — no small tile floating in dead space.
+    var fillsAvailable: Bool = false
     var onTap: (() -> Void)? = nil
     @ViewBuilder var content: () -> Content
 
@@ -73,7 +76,7 @@ struct SpecimenCard<Content: View>: View {
             .gesture(compact ? nil : tiltGesture(in: size))
         }
         // Idle: board aspect. Editing: short strip that leaves room for the keyboard.
-        .modifier(SpecimenCardSizing(compact: compact))
+        .modifier(SpecimenCardSizing(compact: compact, fills: fillsAvailable))
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.72), value: drag)
         .animation(.spring(response: 0.36, dampingFraction: 0.78), value: isDragging)
     }
@@ -148,8 +151,18 @@ struct SpecimenCard<Content: View>: View {
 
 private struct SpecimenCardSizing: ViewModifier {
     let compact: Bool
+    var fills: Bool = false
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        if fills && !compact {
+            content.frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            sized(content)
+        }
+    }
+
+    private func sized(_ content: Content) -> some View {
         content
             .frame(maxWidth: .infinity)
             .aspectRatio(compact ? 2.2 : 1.2, contentMode: .fit)

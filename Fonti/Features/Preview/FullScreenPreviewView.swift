@@ -15,6 +15,8 @@ struct FullScreenPreviewView: View {
     @State private var leading: CGFloat = 4
     @State private var showComposer: Bool = false
     @State private var compareSession: CompareSession?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @FocusState private var composerFocused: Bool
 
     @State private var background: PreviewBackground = .ink
@@ -67,96 +69,61 @@ struct FullScreenPreviewView: View {
 
     var body: some View {
         GeometryReader { geo in
-            VStack(spacing: 12) {
-                SpecimenCard(
-                    background: background,
-                    customImage: customImage,
-                    rotationY: cardRotationY,
-                    isFlipping: isFlipping,
-                    compact: showComposer,
-                    onTap: { beginEditing() }
-                ) {
-                    Group {
-                        if showComposer {
-                            // Write mode: word-aware fitted sample — no glyph flow.
-                            EditSpecimenPreview(
-                                text: previewText,
-                                familyName: family.displayName,
-                                font: styledFont(size: min(livePointSize, 28)),
-                                color: background.glyphColor,
-                                secondary: background.secondaryGlyphColor
-                            )
-                        } else {
-                            SpecimenLayoutView(
-                                template: template,
-                                text: previewText,
-                                familyName: family.displayName,
-                                pointSize: layoutPointSize,
-                                font: styledFont(size: layoutPointSize),
-                                color: background.glyphColor,
-                                secondary: background.secondaryGlyphColor,
-                                animates: glyphAnimationEnabled,
-                                compact: false,
-                                tracking: tracking,
-                                leading: leading
-                            )
-                            .accessibilityHint("Double tap to edit")
-                            .accessibilityAddTraits(.isButton)
+            Group {
+                if isWide && !showComposer {
+                    // Regular width: hero specimen ~2/3, settings column on the right.
+                    HStack(spacing: 0) {
+                        specimenHero
+                            .padding(16)
+                            .frame(width: geo.size.width * 0.64)
+
+                        HairlineDivider()
+                            .padding(.vertical, 16)
+
+                        VStack(spacing: 0) {
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    styleStrips
+                                    PairingsStrip(family: family)
+                                }
+                                .padding(16)
+                            }
+                            .scrollIndicators(.hidden)
+
+                            previewControls
+                                .padding([.horizontal, .bottom], 16)
                         }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(specimenTextOpacity)
-                    .scaleEffect(0.97 + 0.03 * specimenTextOpacity, anchor: .center)
-                }
-                .frame(maxHeight: showComposer ? 148 : geo.size.height * 0.40)
+                    .transition(.opacity)
+                } else {
+                    VStack(spacing: 12) {
+                        specimenHero
+                            .frame(maxHeight: showComposer ? 148 : geo.size.height * 0.46)
 
-                if !showComposer {
-                    TemplateChipStrip(selection: template) { chosen in
-                        switchLayout(to: chosen)
+                        if !showComposer {
+                            styleStrips
+                        }
+
+                        Spacer(minLength: 0)
+                            .contentShape(Rectangle())
+                            .onTapGesture { endEditing() }
+
+                        if !showComposer {
+                            PairingsStrip(family: family)
+                                .transition(.opacity)
+                        }
+
+                        previewControls
                     }
-                    .opacity(isSwitchingLayout ? 0.7 : 1)
-                    .allowsHitTesting(!isSwitchingLayout && !isMorphing)
-
-                    BackgroundChipStrip(
-                        selection: $background,
-                        customImage: $customImage,
-                        isFlipping: isFlipping,
-                        onSelect: flip
-                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
                     .transition(.opacity)
                 }
-
-                Spacer(minLength: 0)
-                    .contentShape(Rectangle())
-                    .onTapGesture { endEditing() }
-
-                if !showComposer {
-                    PairingsStrip(family: family)
-                        .transition(.opacity)
-                }
-
-                PreviewControls(
-                    family: family,
-                    size: $size,
-                    isBold: $isBold,
-                    isItalic: $isItalic,
-                    text: $text,
-                    tracking: $tracking,
-                    leading: $leading,
-                    shareSlot: shareSlot,
-                    isEditing: showComposer,
-                    composerFocused: $composerFocused,
-                    onEdit: { beginEditing() },
-                    onDone: { endEditing() },
-                    onCompare: {
-                        compareSession = CompareSession.make(from: family, text: previewText)
-                    }
-                )
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
-            .padding(.bottom, 12)
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+            .animation(AdaptiveLayout.transition, value: isWide)
         }
         .background(Color.fontiInk.ignoresSafeArea())
         .navigationTitle(family.displayName)
@@ -213,6 +180,101 @@ struct FullScreenPreviewView: View {
 
     /// Activity type for the specimen screen, used for onscreen annotation.
     static let viewFontActivityType = "com.tade.Fonti.viewFont"
+
+    // MARK: - Adaptive pieces
+
+    private var isWide: Bool {
+        AdaptiveLayout.isWide(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
+    }
+
+    /// Full-bleed poster canvas; type scales with the canvas so the slider
+    /// stays relative to the space it has.
+    private var specimenHero: some View {
+        GeometryReader { canvas in
+            let canvasScale = showComposer ? 1 : AdaptiveLayout.canvasScale(for: canvas.size)
+            SpecimenCard(
+                    background: background,
+                    customImage: customImage,
+                    rotationY: cardRotationY,
+                    isFlipping: isFlipping,
+                    compact: showComposer,
+                    fillsAvailable: !showComposer,
+                    onTap: { beginEditing() }
+                ) {
+                    Group {
+                        if showComposer {
+                            // Write mode: word-aware fitted sample — no glyph flow.
+                            EditSpecimenPreview(
+                                text: previewText,
+                                familyName: family.displayName,
+                                font: styledFont(size: min(livePointSize, 28)),
+                                color: background.glyphColor,
+                                secondary: background.secondaryGlyphColor
+                            )
+                        } else {
+                            SpecimenLayoutView(
+                                template: template,
+                                text: previewText,
+                                familyName: family.displayName,
+                                pointSize: layoutPointSize * canvasScale,
+                                font: styledFont(size: layoutPointSize * canvasScale),
+                                color: background.glyphColor,
+                                secondary: background.secondaryGlyphColor,
+                                animates: glyphAnimationEnabled,
+                                compact: false,
+                                tracking: tracking,
+                                leading: leading
+                            )
+                            .accessibilityHint("Double tap to edit")
+                            .accessibilityAddTraits(.isButton)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(specimenTextOpacity)
+                    .scaleEffect(0.97 + 0.03 * specimenTextOpacity, anchor: .center)
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var styleStrips: some View {
+        TemplateChipStrip(selection: template) { chosen in
+            switchLayout(to: chosen)
+        }
+        .opacity(isSwitchingLayout ? 0.7 : 1)
+        .allowsHitTesting(!isSwitchingLayout && !isMorphing)
+
+        BackgroundChipStrip(
+            selection: $background,
+            customImage: $customImage,
+            isFlipping: isFlipping,
+            onSelect: flip
+        )
+        .transition(.opacity)
+    }
+
+    private var previewControls: some View {
+        PreviewControls(
+            family: family,
+            size: $size,
+            isBold: $isBold,
+            isItalic: $isItalic,
+            text: $text,
+            tracking: $tracking,
+            leading: $leading,
+            shareSlot: shareSlot,
+            isEditing: showComposer,
+            composerFocused: $composerFocused,
+            onEdit: { beginEditing() },
+            onDone: { endEditing() },
+            onCompare: {
+                // Hand over the raw words, not `previewText`: an empty field falls
+                // back to *this* font's name, which Compare would then render
+                // in both columns as if it were the user's sample text.
+                compareSession = CompareSession.make(from: family, text: text)
+            }
+        )
+    }
 
     private func styledFont(size: CGFloat) -> Font {
         var font = Font.custom(family.id, size: size)
