@@ -51,6 +51,11 @@ struct SettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
+        // Capped then re-expanded: the inner frame holds the form to a
+        // readable measure, the outer one centres it. Background sits outside
+        // both so the ink still reaches the edges of the screen.
+        .frame(maxWidth: AdaptiveLayout.readableFormWidth)
+        .frame(maxWidth: .infinity)
         .background(Color.fontiInk.ignoresSafeArea())
         .dismissKeyboardOnBackgroundTap()
         .foregroundStyle(Color.fontiCream)

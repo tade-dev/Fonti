@@ -47,6 +47,15 @@ enum AdaptiveLayout {
         return max(min(size, maxSize), 12)
     }
 
+    /// Readable measure for a form on a wide screen.
+    ///
+    /// A `Form` fills whatever it is given, so on the 867pt usable width of
+    /// iPhone Duo's inner panel every toggle ends up ~800pt from the label it
+    /// belongs to. Capping to this and centring keeps label and control within
+    /// reading distance. On a phone the cap is wider than the screen, so it
+    /// does nothing and the compact layout is untouched.
+    static let readableFormWidth: CGFloat = 640
+
     /// The one curve layout switches (compact ⇄ wide) animate on.
     static let transition = Animation.smooth(duration: 0.35)
 
