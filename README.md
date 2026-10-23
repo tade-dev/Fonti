@@ -12,7 +12,7 @@ Fonti renders *your* words in every font on the device. Type a line and the whol
 
 ## Try it
 
-- **iOS (TestFlight):** TESTFLIGHT_LINK_TBD
+- **App Store:** https://apps.apple.com/gb/app/fonti-find-your-type/id6777232340
 - **Demo video:** DEMO_VIDEO_TBD
 
 <p align="center">
