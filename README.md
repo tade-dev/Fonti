@@ -1,153 +1,111 @@
-# Fonti
+<p align="center">
+  <img src="Fonti/Assets.xcassets/AppIcon.appiconset/icon-1024.png" alt="Fonti app icon" width="128" height="128" style="border-radius: 28px;">
+</p>
 
-> *Find your type.*
+<h1 align="center">Fonti</h1>
 
-A SwiftUI font previewer for designers, built for iOS 26+. Paste or type any text and see it rendered across every system font in a scrolling, premium gallery — save favourites, open them full-screen, share them as specimen images.
+<p align="center">Find your type.</p>
 
-Liquid Glass throughout. SwiftData-backed. No third-party dependencies.
+There are hundreds of typefaces on an iPhone and no real way to look at them. The system picker shows a list of names, so choosing a face means reading the word "Baskerville" set in Helvetica and imagining the rest. Designers end up screenshotting, pinching and guessing.
+
+Fonti renders *your* words in every font on the device. Type a line and the whole library re-sets itself in front of you. Open one and you get a full specimen — four layouts, warm backgrounds, size, weight, tracking and leading — plus the faces a designer would pair it with, a side-by-side compare, and a shortlist you can keep.
+
+## Try it
+
+- **iOS (TestFlight):** TESTFLIGHT_LINK_TBD
+- **Demo video:** DEMO_VIDEO_TBD
 
 <p align="center">
   <img src="docs/screenshots/01-browse.jpg" width="180" alt="Browse" />
   <img src="docs/screenshots/02-saved.jpg" width="180" alt="Saved" />
-  <img src="docs/screenshots/03-preview.jpg" width="180" alt="Preview" />
+  <img src="docs/screenshots/03-preview.jpg" width="180" alt="Full screen preview" />
   <img src="docs/screenshots/04-settings.jpg" width="180" alt="Settings" />
 </p>
 
----
+There is no web build. Fonti reads the fonts installed on the device, so it only means anything on a real one.
 
-## What's new in v1.1
+## How it uses Apple Intelligence and iPhone Duo
 
-- **Font Pairings** — A curated map of designer-approved heading + body combinations. Open the Full Screen Preview of a pairable family (Georgia, Helvetica Neue, Bodoni 72, Baskerville, Avenir Next, more) and you'll see a "Pairs well with…" strip of glass chips below the controls, each rendered in its own font. Tapping a chip *morphs* it into the new Preview via the same zoom transition Apple uses in Photos.
-- **Custom Font Import** — A new **My Fonts** section in Settings opens the Files picker for `.ttf` or `.otf` files. Imported fonts are copied into the sandbox, registered with Core Text, and surfaced in Browse alongside the system fonts (with a small amber dot beside the caps label so designers can tell them apart). Swipe-to-delete in Settings removes them cleanly.
+**Apple Intelligence**
 
----
+- **Ask for a face.** "Find me a serif" or "find monospace fonts" resolves through `FindFontsIntent` against the device's own catalogue, classified by measured proportions rather than a hardcoded list.
+- **Ask about this one.** While a specimen is open the screen is annotated with that typeface as a `FontEntity`, so "what pairs with this?" and "find something like this" bind to the right face without naming it.
+- **Similar, by measurement.** `FindSimilarFontsIntent` compares x-height, width and stroke contrast, so "something like Futura" returns geometric sans faces rather than string matches.
+- **Spotlight.** Every family is indexed, including imported ones, so a font is reachable from search without opening the app.
+- **Shortcuts.** Find Font Pairings, Find Similar Fonts, Compare Fonts and Show Saved Fonts are all exposed as App Shortcuts.
 
-## Screens
+**iPhone Duo**
 
-<table>
-<tr>
-<td width="40%" valign="top">
-  <img src="docs/screenshots/01-browse.jpg" alt="Browse" />
-</td>
-<td width="60%" valign="top">
+- **Both panels.** The cover screen gets a single column; the inner display reports regular in both size classes and gets a split view — list on the left, live specimen on the right.
+- **System bars, not hand-rolled.** Toolbars and the tab bar move to the vertical strip on the trailing edge because Fonti uses standard components rather than reimplementing them.
+- **Compare across the hinge.** The compare screen is an `ArrangementView`, so a partially folded device seats each typeface on its own half of the book instead of letting one straddle the fold.
+- **Reachable controls.** On the inner display the settings column sits low, within thumb reach of a two-handed grip, and the size and style controls float over the canvas they affect.
 
-### Browse
-
-A sticky liquid-glass input bar sits at the top — type or paste anything and every card below renders it in a different system font. Each card is a glass surface showing the family name in small caps, with a heart button that saves the font to your library.
-
-- **Sticky glass input** pinned via `safeAreaInset(edge: .top)`
-- **`LazyVStack` of font cards** — lazy realisation handles hundreds of system families smoothly
-- **Text-change crossfade** as you type; **scroll fade-in** as cards enter the viewport
-- **Per-card SwiftData query** keeps the heart state in sync with the Saved store
-- Tapping a card triggers the **lift + parallax + zoom** transition into the Preview
-
-</td>
-</tr>
-
-<tr>
-<td width="40%" valign="top">
-  <img src="docs/screenshots/02-saved.jpg" alt="Saved" />
-</td>
-<td width="60%" valign="top">
-
-### Saved
-
-A two-column `LazyVGrid` of every font you've hearted. Each card shows the family name and an "Aa Bb" specimen rendered in that font.
-
-- **`@Query(sort: \SavedFont.savedAt, order: .reverse)`** — most-recent first
-- **Long-press → Remove** context menu (with a snappy scale + opacity transition)
-- **Empty state**: a quiet *"Heart a font to keep it here."* in cream-50%
-- Tapping a card pushes the same Preview screen as Browse, with the same lift transition
-
-</td>
-</tr>
-
-<tr>
-<td width="40%" valign="top">
-  <img src="docs/screenshots/03-preview.jpg" alt="Full Screen Preview" />
-</td>
-<td width="60%" valign="top">
-
-### Full Screen Preview
-
-A large centred render of your text in the selected family. The navigation title itself is rendered in the family font — the screen *is* the specimen.
-
-- **Glass control capsule** at the bottom: 12–96 pt size slider, bold / italic glass toggles, share button
-- **Bold/italic detection** via `UIFontDescriptor` — toggles are always visible but greyed at 35% opacity when the family doesn't support that trait (no layout shift between fonts)
-- **Share** generates a 1080×1080 specimen PNG via `ImageRenderer` and hands it off to `ShareLink`
-- Default starting size comes from Settings
-
-</td>
-</tr>
-
-<tr>
-<td width="40%" valign="top">
-  <img src="docs/screenshots/04-settings.jpg" alt="Settings" />
-</td>
-<td width="60%" valign="top">
-
-### Settings
-
-A clean Form-based screen, all `@AppStorage`-backed.
-
-- **Defaults** — a sample text that replaces the family-name fallback on Browse, and a preview size that becomes the starting value for the Full Screen Preview slider
-- **Feedback** — Haptics toggle (light impact on lift-tap, selection on heart-toggle, gated by this setting)
-- **Library** — destructive *Clear Saved Fonts* button with a confirmation alert, count-aware footer
-- **About** — version + build pulled from `Info.plist`, designer credit, GitHub link
-
-</td>
-</tr>
-</table>
-
----
+[docs/designing-for-iphone-duo.md](docs/designing-for-iphone-duo.md) is the working reference: Apple's guidance, the iOS 27.1 APIs, measured display specs, and what had to change here.
 
 ## Built with
 
-- **SwiftUI** — every screen, including the iOS 26 `Tab(_:systemImage:)` API and `.tabBarMinimizeBehavior(.onScrollDown)`
-- **Liquid Glass** — `.glassEffect(in:)`, `.buttonStyle(.glass)`, native glass tab bar
-- **SwiftData** — `@Model class SavedFont` with `@Attribute(.unique)` on `familyName`
-- **`ImageRenderer`** — 1080×1080 specimen export at scale 3
-- **`@AppStorage`** — settings persistence
-- **`.matchedTransitionSource` + `.navigationTransition(.zoom(sourceID:in:))`** — paired with a custom source-side lift + parallax for the card-to-preview transition
-- **`.sensoryFeedback(_:trigger:)`** — toggleable haptics
-- No third-party dependencies
+| Tool | What it does in Fonti |
+|---|---|
+| **SwiftUI** | Every screen. `NavigationSplitView` on wide displays, `ArrangementView` for compare, `Layout` for the glyph flow, and `ImageRenderer` for specimen export |
+| **Liquid Glass** | `.glassEffect(in:)` on the search bar, control capsule and pairing chips; the system tab bar provides its own |
+| **SwiftData** | `SavedFont` and `ImportedFont`, with `@Attribute(.unique)` on the family name |
+| **App Intents** | Font and category entities, four App Shortcuts, and onscreen annotation so "this" resolves to the face on screen |
+| **Core Spotlight** | Indexes every family, system and imported, with a fingerprint so re-indexing only happens when the font set changes |
+| **Core Text** | Registers imported `.ttf` and `.otf` files so they appear in Browse beside the system faces |
+| **WidgetKit** | A specimen widget with a configurable face, backed by an App Group mirror of the saved store |
+| **XCTest + AppIntentsTesting** | Runs the intents out of process, the way Siri does, against the installed app |
+
+No third-party dependencies.
 
 ## Architecture
 
-```
-Fonti/
-├── App/
-│   ├── FontiApp.swift              // @main, SwiftData modelContainer
-│   └── RootView.swift              // TabView host
-├── Theme/
-│   ├── FontiColors.swift           // ink / cream / amber tokens
-│   └── CardLiftEffect.swift        // shared lift+parallax modifier
-├── Models/
-│   └── SavedFont.swift             // @Model, @Attribute(.unique)
-├── Services/
-│   ├── SystemFontProvider.swift    // UIFont.familyNames → [FontFamily]
-│   ├── FontTraitSupport.swift      // bold/italic detection
-│   └── SpecimenRenderer.swift      // ImageRenderer-based 1080×1080 PNG
-├── Features/
-│   ├── Browse/                     // BrowseView, BrowseModel, FontCard
-│   ├── Preview/                    // FullScreenPreviewView, PreviewControls
-│   ├── Saved/                      // SavedFontsView, SavedFontCard
-│   └── Settings/                   // SettingsView, AppAppearance
-└── Assets.xcassets                 // AppIcon
+```mermaid
+flowchart LR
+  UI[SwiftUI app<br/>Fonti/] --> Catalogue[Font catalogue<br/>Shared/]
+  UI --> CT[Core Text<br/>imported .ttf / .otf]
+  UI --> SD[(SwiftData<br/>saved + imported)]
+  SD --> Mirror[App Group mirror<br/>Shared/]
+  Mirror --> W[Widgets<br/>FontiWidgets/]
+  Intents[App Intents · Siri · Spotlight] --> Nav[FontiNavigator]
+  Nav --> UI
 ```
 
-## Run it
+Everything an intent, a widget or Spotlight needs lives in `Shared/`, because the app's SwiftData store is inside the app container and those processes cannot read it. The saved list is mirrored into an App Group so an intent can answer "what have I saved?" without launching the app.
 
-Requires **Xcode 26** and **iOS 26.2+** simulator (or device).
+| Path | What it is |
+|---|---|
+| `Fonti/` | The app — `App/`, `Features/`, `Services/`, `Theme/`, `Models/`, `Intents/` |
+| `FontiWidgets/` | Home and Lock Screen widgets, with their configuration intent |
+| `Shared/` | Code the app, widgets and intents all need: font catalogue, pairings, availability, colour tokens, App Group mirrors, Spotlight indexer |
+| `FontiIntentTests/` | Out-of-process App Intents tests (a UI testing bundle, not a hosted unit test — `AppIntentsTesting` talks to the installed app over XPC) |
+| `docs/` | Design notes, the iPhone Duo reference, and the App Store screenshot pipeline (`docs/appstore/compose.py`) |
 
-```bash
+## Running locally
+
+Needs **Xcode 27.1 or later** and an **iOS 27.1** simulator or device.
+
+```sh
 git clone https://github.com/tade-dev/Fonti.git
 cd Fonti
 open Fonti.xcodeproj
 ```
 
-Pick the **iPhone 17 (iOS 26.2)** simulator and ⌘R.
+Pick a simulator and ⌘R. The deployment target is iOS 27.0, but `ArrangementView` in the compare screen is an iOS 27.1 API, so the 27.1 SDK is required to build. Xcode 27.1 is currently a beta, so release builds for the App Store need a non-beta SDK until it ships.
+
+To see the foldable layouts, pick **iPhone Duo** in Device Hub and use the fold buttons in its bottom toolbar; hold ⌥ while dragging for partial hinge angles. There is no `simctl` equivalent — folding is GUI only.
+
+## Tests
+
+```sh
+xcodebuild test -project Fonti.xcodeproj -scheme Fonti \
+  -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
+```
+
+19 tests covering intent resolution, classification search, similarity, pairings, compare, Spotlight indexing and onscreen annotation. They run against the installed app over XPC, so they exercise the real Apple Intelligence surface rather than mocks.
+
+The suite needs the app to have completed onboarding — on a freshly erased simulator the Spotlight and onscreen-entity tests fail because the indexer only runs once `RootView` appears.
 
 ## Credits
 
-Designed and built in 2026 by **Akintade Oluwaseun**. App icon is an *Aa* type specimen set in Apple's New York serif — cream A + amber a, with a small *F O N T I* wordmark in caps below, on the brand ink (#0D0D0D).
+Designed and built in 2026 by **Akintade Oluwaseun**. The icon is an *Aa* specimen — cream A, amber a — on the brand ink `#0D0D0D`.
