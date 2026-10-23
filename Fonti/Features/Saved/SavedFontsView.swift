@@ -107,16 +107,12 @@ struct SavedFontsView: View {
         if let family = selection {
             specimen(for: family)
         } else {
-            ZStack {
-                Color.fontiInk.ignoresSafeArea()
-                // Suppressed on an empty library: the sidebar is already saying
-                // "Heart a font to keep it here", and two prompts is one too many.
-                if !saved.isEmpty {
-                    Text("Pick a typeface.")
-                        .font(.title3)
-                        .foregroundStyle(Color.fontiCream.opacity(0.4))
-                }
-            }
+            // No featured face here: Saved can only select what has been
+            // hearted, and the font of the day usually hasn't been — a tap
+            // that does nothing is worse than no tap. The prompt is also
+            // suppressed on an empty library, where the sidebar already says
+            // "Heart a font to keep it here" and two prompts is one too many.
+            DetailPlaceholder(hint: saved.isEmpty ? "" : "Pick a typeface.")
         }
     }
 

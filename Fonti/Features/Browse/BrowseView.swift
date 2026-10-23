@@ -154,16 +154,23 @@ struct BrowseView: View {
             // an opaque bar. Invisible at the top of the list, where there is
             // nothing behind it to hide.
             .background {
+                // Stops rather than even colours, and a shorter tail. The
+                // even three-colour version faded across roughly half its
+                // height, which on the 669pt-tall inner display left the first
+                // card half-ghosted over ~42pt — readable enough to look like a
+                // rendering fault rather than a deliberate fade. Holding opaque
+                // to 82% and falling away over the last 18% keeps cards crisp
+                // until they are nearly at the bar, then takes them quickly.
                 LinearGradient(
-                    colors: [
-                        Color.fontiInk,
-                        Color.fontiInk,
-                        Color.fontiInk.opacity(0)
+                    stops: [
+                        .init(color: Color.fontiInk, location: 0),
+                        .init(color: Color.fontiInk, location: 0.82),
+                        .init(color: Color.fontiInk.opacity(0), location: 1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .padding(.bottom, -30)
+                .padding(.bottom, -18)
                 .allowsHitTesting(false)
                 .ignoresSafeArea(edges: .top)
             }
@@ -202,13 +209,20 @@ struct BrowseView: View {
         if let family = selection {
             specimen(for: family)
         } else {
-            ZStack {
-                Color.fontiInk.ignoresSafeArea()
-                Text("Pick a typeface.")
-                    .font(.title3)
-                    .foregroundStyle(Color.fontiCream.opacity(0.4))
-            }
+            DetailPlaceholder(
+                hint: "Pick a typeface.",
+                featured: featuredFamily,
+                onPick: { selection = $0 }
+            )
         }
+    }
+
+    /// Today's curated face, resolved against what is actually installed —
+    /// `FeaturedFont` returns nil when nothing in its pool can be rendered.
+    private var featuredFamily: FontFamily? {
+        guard let name = FeaturedFont.familyName() else { return nil }
+        return allFonts.first { $0.id.caseInsensitiveCompare(name) == .orderedSame }
+            ?? FontFamily(id: name, displayName: name)
     }
 
     @ViewBuilder
