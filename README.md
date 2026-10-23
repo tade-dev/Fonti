@@ -13,7 +13,6 @@ Fonti renders *your* words in every font on the device. Type a line and the whol
 ## Try it
 
 - **App Store:** https://apps.apple.com/gb/app/fonti-find-your-type/id6777232340
-- **Demo video:** DEMO_VIDEO_TBD
 
 <p align="center">
   <img src="docs/screenshots/01-browse.jpg" width="180" alt="Browse" />
