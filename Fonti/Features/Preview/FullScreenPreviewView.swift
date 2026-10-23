@@ -58,45 +58,74 @@ struct FullScreenPreviewView: View {
         _livePointSize = State(initialValue: initialSize)
     }
 
-    /// Empty field falls back to the font's own name so the specimen
-    /// (and AR / share) always have something meaningful to render.
+    /// Empty field falls back to whatever the active template was drawn for,
+    /// so the specimen (and AR / share) always have something meaningful to
+    /// render — the font's own name for most, a paragraph for Body.
     private var previewText: String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? family.displayName : text
+        guard trimmed.isEmpty else { return text }
+        return template.fallbackText(familyName: family.displayName)
     }
 
     var body: some View {
         GeometryReader { geo in
             Group {
-                if AdaptiveLayout.detailPrefersSideColumn(geo.size) && !showComposer {
+                if AdaptiveLayout.detailPrefersSideColumn(geo.size) && showComposer {
+                    // Composing on a wide screen: canvas keeps the room, the
+                    // composer docks beneath it. The settings column steps
+                    // aside — nothing in it applies while you are typing.
+                    VStack(spacing: 12) {
+                        specimenHero(wide: true)
+                            .padding(16)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        previewControls
+                            .padding([.horizontal, .bottom], 16)
+                    }
+                    .transition(.opacity)
+                } else if AdaptiveLayout.detailPrefersSideColumn(geo.size) {
                     // Regular width: hero specimen ~2/3, settings column on the right.
                     HStack(spacing: 0) {
-                        specimenHero
+                        // Controls float over the canvas rather than sitting in
+                        // the column. Their intrinsic width is ~349pt and the
+                        // column only offers ~280pt inside its padding — and
+                        // `.frame(width:)` does not clip, so the bar used to
+                        // bleed out both sides, over the specimen on one and
+                        // under the vertical tab bar on the other. Over the hero
+                        // it has the full canvas width, and sits beside the type
+                        // it adjusts rather than across the page from it.
+                        specimenHero(wide: true)
                             .padding(16)
                             .frame(maxWidth: .infinity)
+                            .overlay(alignment: .bottom) {
+                                previewControls
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 20)
+                            }
 
                         HairlineDivider()
                             .padding(.vertical, 16)
 
-                        VStack(spacing: 0) {
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    styleStrips
-                                    PairingsStrip(family: family)
-                                }
-                                .padding(16)
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 16) {
+                                styleStrips
+                                PairingsStrip(family: family)
                             }
-                            .scrollIndicators(.hidden)
-
-                            previewControls
-                                .padding([.horizontal, .bottom], 16)
+                            .padding(16)
+                            // Bottom-aligned: the device is held in two hands
+                            // and these are the controls you reach for most, so
+                            // they sit near the thumbs instead of at the top of
+                            // a 669pt column. Still scrolls if it ever outgrows
+                            // the space.
+                            .frame(minHeight: geo.size.height, alignment: .bottom)
                         }
+                        .scrollIndicators(.hidden)
                         .frame(width: AdaptiveLayout.sideColumnWidth(for: geo.size.width))
                     }
                     .transition(.opacity)
                 } else {
                     VStack(spacing: 12) {
-                        specimenHero
+                        specimenHero(wide: false)
                             .frame(maxHeight: showComposer ? 148 : geo.size.height * 0.46)
 
                         if !showComposer {
@@ -184,9 +213,14 @@ struct FullScreenPreviewView: View {
 
     /// Full-bleed poster canvas; type scales with the canvas so the slider
     /// stays relative to the space it has.
-    private var specimenHero: some View {
+    /// `wide` is about the screen, not the mode. Composing on a phone wants a
+    /// small card so the keyboard has room; composing on a 951pt canvas does
+    /// not, and the compact card there is a 148pt-tall sliver stranded in the
+    /// corner of an otherwise empty screen.
+    private func specimenHero(wide: Bool) -> some View {
         GeometryReader { canvas in
-            let canvasScale = showComposer ? 1 : AdaptiveLayout.canvasScale(for: canvas.size)
+            let compactCard = showComposer && !wide
+            let canvasScale = compactCard ? 1 : AdaptiveLayout.canvasScale(for: canvas.size)
             let heroSize = AdaptiveLayout.fittedPointSize(
                 layoutPointSize * canvasScale, text: previewText, width: canvas.size.width - 56
             )
@@ -195,8 +229,8 @@ struct FullScreenPreviewView: View {
                     customImage: customImage,
                     rotationY: cardRotationY,
                     isFlipping: isFlipping,
-                    compact: showComposer,
-                    fillsAvailable: !showComposer,
+                    compact: compactCard,
+                    fillsAvailable: !compactCard,
                     onTap: { beginEditing() }
                 ) {
                     Group {

@@ -32,6 +32,20 @@ struct PairingsStrip: View {
                     .padding(.horizontal, 2)
                     .padding(.vertical, 6)   // breathing room for the lift scale
                 }
+                // A chip cut dead at the column edge reads as a clipping bug.
+                // Fading the last few points says "there is more, scroll" —
+                // the strip always did scroll, it just never looked like it.
+                .mask {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black, location: 0.88),
+                            .init(color: .black.opacity(0), location: 1)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                }
             }
         }
     }

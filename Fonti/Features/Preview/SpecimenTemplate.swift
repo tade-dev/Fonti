@@ -60,6 +60,23 @@ enum SpecimenTemplate: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// What the specimen shows when the field is empty.
+    ///
+    /// Most templates set the font's own name — a face saying its own name is
+    /// the point, and at 0.85–1.0x the slider it fills the canvas. Body is
+    /// sized for a paragraph (0.42x, eight lines), so a nine-character family
+    /// name leaves the canvas all but empty; it gets its suggested copy
+    /// instead, which is the content it was drawn for.
+    ///
+    /// This reads rather than writes: `text` stays genuinely empty, so the
+    /// moment someone types, their words win.
+    func fallbackText(familyName: String) -> String {
+        switch self {
+        case .body: return suggestedCopy
+        default: return familyName
+        }
+    }
+
     /// Suggested copy when the field is empty / still a seed — optional UX helper.
     var suggestedCopy: String {
         switch self {

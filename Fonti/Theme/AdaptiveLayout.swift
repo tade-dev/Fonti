@@ -31,9 +31,11 @@ enum AdaptiveLayout {
     }
 
     /// Settings column width: fixed band so the hero never gets squeezed
-    /// and the column never collapses.
+    /// and the column never collapses. Slightly wider since the control bar
+    /// moved out onto the canvas — the room now goes to the pairing chips,
+    /// which are what actually ran out of it.
     static func sideColumnWidth(for width: CGFloat) -> CGFloat {
-        min(max(width * 0.36, 300), 380)
+        min(max(width * 0.38, 320), 400)
     }
 
     /// Clamp a point size so the longest word fits on one line of `width`,
