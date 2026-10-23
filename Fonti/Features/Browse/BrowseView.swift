@@ -196,6 +196,17 @@ struct BrowseView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
+            // The wordmark replaces the title text. `navigationTitle` stays
+            // set above so VoiceOver and the back button still have "Fonti" —
+            // the principal item only changes what is drawn.
+            ToolbarItem(placement: .principal) {
+                Image("FontiWordmark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 22)
+                    .accessibilityLabel("Fonti")
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 FontCollectionLayoutToggle(
                     layout: Binding(get: { layout }, set: { layout = $0 })
