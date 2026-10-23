@@ -90,7 +90,11 @@ private struct GlyphAppear: ViewModifier {
 
 // MARK: - Layout value
 
-private struct GlyphCharacterKey: LayoutValueKey {
+/// `nonisolated` because the target builds with `SWIFT_DEFAULT_ACTOR_ISOLATION
+/// = MainActor`, which would otherwise make this conformance main-actor
+/// isolated — and `GlyphFlow.makeRows` reads it from `Layout`'s nonisolated
+/// context. A warning today, an error under the Swift 6 language mode.
+nonisolated private struct GlyphCharacterKey: LayoutValueKey {
     static let defaultValue: Character? = nil
 }
 
