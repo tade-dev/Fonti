@@ -8,7 +8,7 @@ struct BrowseView: View {
 
     @State private var model = BrowseModel()
     @State private var liftedFamilyId: String?
-    @State private var selection: FontFamily?
+    @State private var path: [FontFamily] = []
     @State private var didAppear = false
     @Namespace private var cardNamespace
 
@@ -72,7 +72,7 @@ struct BrowseView: View {
                 detail
             }
         } else {
-            NavigationStack(path: pathBinding) {
+            NavigationStack(path: $path) {
                 sidebar
                     .navigationDestination(for: FontFamily.self) { family in
                         specimen(for: family)
@@ -81,14 +81,8 @@ struct BrowseView: View {
         }
     }
 
-    /// The stack's path, projected from `selection` so both containers read one
-    /// source of truth. A back-swipe empties the path, which clears selection.
-    private var pathBinding: Binding<[FontFamily]> {
-        Binding(
-            get: { selection.map { [$0] } ?? [] },
-            set: { selection = $0.last }
-        )
-    }
+    /// What the detail column shows: the deepest font on the stack.
+    private var selection: FontFamily? { path.last }
 
     private var sidebar: some View {
         ScrollView {
@@ -127,8 +121,8 @@ struct BrowseView: View {
         .scrollDismissesKeyboard(.immediately)
         .background(Color.fontiInk.ignoresSafeArea())
         .dismissKeyboardOnBackgroundTap()
-        .onChange(of: selection) { _, newValue in
-            if newValue == nil {
+        .onChange(of: path) { _, newPath in
+            if newPath.isEmpty {
                 withAnimation(.easeOut(duration: 0.25)) {
                     liftedFamilyId = nil
                 }
@@ -223,7 +217,7 @@ struct BrowseView: View {
             DetailPlaceholder(
                 hint: "Pick a typeface.",
                 featured: featuredFamily,
-                onPick: { selection = $0 }
+                onPick: { path = [$0] }
             )
         }
     }
@@ -321,7 +315,7 @@ struct BrowseView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
-            selection = family
+            path = [family]
         }
     }
 
@@ -336,8 +330,8 @@ struct BrowseView: View {
             let family = allFonts.first { $0.id.caseInsensitiveCompare(name) == .orderedSame }
                 ?? FontFamily(id: name, displayName: name)
             liftedFamilyId = family.id
-            if selection?.id != family.id {
-                selection = family
+            if path.last?.id != family.id {
+                path = [family]
             }
 
         case .search(let query):
@@ -346,7 +340,7 @@ struct BrowseView: View {
             // Sets `filter`, never `input` — `input` is the specimen text, so
             // writing the query there would rewrite every card instead of
             // filtering anything.
-            selection = nil
+            path.removeAll()
             withAnimation(.smooth(duration: 0.3)) {
                 model.filter = query
             }

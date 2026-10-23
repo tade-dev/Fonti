@@ -7,7 +7,7 @@ struct SavedFontsView: View {
     @Query(sort: \SavedFont.savedAt, order: .reverse) private var saved: [SavedFont]
 
     @State private var liftedFamilyId: String?
-    @State private var selection: FontFamily?
+    @State private var path: [FontFamily] = []
     @State private var didAppear = false
     @Namespace private var cardNamespace
 
@@ -39,7 +39,7 @@ struct SavedFontsView: View {
                 detail
             }
         } else {
-            NavigationStack(path: pathBinding) {
+            NavigationStack(path: $path) {
                 sidebar
                     .navigationDestination(for: FontFamily.self) { family in
                         specimen(for: family)
@@ -48,12 +48,8 @@ struct SavedFontsView: View {
         }
     }
 
-    private var pathBinding: Binding<[FontFamily]> {
-        Binding(
-            get: { selection.map { [$0] } ?? [] },
-            set: { selection = $0.last }
-        )
-    }
+    /// What the detail column shows: the deepest font on the stack.
+    private var selection: FontFamily? { path.last }
 
     private var sidebar: some View {
         Group {
@@ -76,8 +72,8 @@ struct SavedFontsView: View {
                 }
             }
         }
-        .onChange(of: selection) { _, newValue in
-            if newValue == nil {
+        .onChange(of: path) { _, newPath in
+            if newPath.isEmpty {
                 withAnimation(.easeOut(duration: 0.25)) {
                     liftedFamilyId = nil
                 }
@@ -193,7 +189,7 @@ struct SavedFontsView: View {
         }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(180))
-            selection = family
+            path = [family]
         }
     }
 
@@ -201,8 +197,8 @@ struct SavedFontsView: View {
         // The split view keeps showing whatever is selected, so removing the
         // selected face would leave its specimen on screen with nothing in the
         // list behind it.
-        if selection?.id == entry.familyName {
-            selection = nil
+        if path.last?.id == entry.familyName {
+            path.removeAll()
         }
         withAnimation(.snappy(duration: 0.25)) {
             modelContext.delete(entry)
