@@ -12,15 +12,18 @@ struct WelcomeSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 26) {
                 header
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 18) {
                     ForEach(WelcomeFeature.all) { WelcomeFeatureRow(feature: $0) }
                 }
             }
             .padding(.horizontal, 28)
-            .padding(.top, 56)
-            .padding(.bottom, 16)
+            // Tight enough that all five rows land above the button on the
+            // 678pt cover panel. The list still scrolls — safeAreaInset keeps
+            // it clear of the button — but nobody opens on a cut-off row.
+            .padding(.top, 40)
+            .padding(.bottom, 12)
             // Capped so the rows keep a readable measure on the inner display
             // and on iPad, where a sheet is given far more width than this
             // content wants.
@@ -50,7 +53,7 @@ struct WelcomeSheet: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Welcome to")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.fontiCream.opacity(0.7))
@@ -58,7 +61,7 @@ struct WelcomeSheet: View {
             Image("FontiWordmark")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 40)
+                .frame(height: 34)
                 .accessibilityLabel("Fonti")
         }
     }
