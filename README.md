@@ -16,8 +16,8 @@ Fonti renders *your* words in every font on the device. Type a line and the whol
 
 <p align="center">
   <img src="docs/screenshots/01-browse.jpg" width="180" alt="Browse" />
-  <img src="docs/screenshots/02-saved.jpg" width="180" alt="Saved" />
-  <img src="docs/screenshots/03-preview.jpg" width="180" alt="Full screen preview" />
+  <img src="docs/screenshots/02-preview.jpg" width="180" alt="Full screen preview" />
+  <img src="docs/screenshots/03-compare.jpg" width="180" alt="Compare" />
   <img src="docs/screenshots/04-settings.jpg" width="180" alt="Settings" />
 </p>
 
