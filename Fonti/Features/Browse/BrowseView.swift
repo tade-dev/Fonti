@@ -69,7 +69,23 @@ struct BrowseView: View {
                     // 280 the names truncate; the detail still gets 551pt.
                     .navigationSplitViewColumnWidth(min: 390, ideal: 400, max: 410)
             } detail: {
-                detail
+                // The detail column needs its own stack, not just a view. A
+                // "Pairs well with" chip is a NavigationLink, and with nothing
+                // to push into it had no destination and did nothing at all on
+                // the inner display and iPad. Rooted at the placeholder, with
+                // the same `path` driving it, so a sidebar tap pushes the
+                // specimen and a chip pushes the next face on top of it.
+                NavigationStack(path: $path) {
+                    detailRoot
+                        .navigationDestination(for: FontFamily.self) { family in
+                            specimen(for: family)
+                                // At depth 1 the sidebar is the way back, so a
+                                // Back button to an empty placeholder would be
+                                // noise. From depth 2 it returns to the face
+                                // you came from, which is the point.
+                                .navigationBarBackButtonHidden(path.count <= 1)
+                        }
+                }
             }
         } else {
             NavigationStack(path: $path) {
@@ -80,9 +96,6 @@ struct BrowseView: View {
             }
         }
     }
-
-    /// What the detail column shows: the deepest font on the stack.
-    private var selection: FontFamily? { path.last }
 
     private var sidebar: some View {
         ScrollView {
@@ -209,17 +222,14 @@ struct BrowseView: View {
         }
     }
 
-    @ViewBuilder
-    private var detail: some View {
-        if let family = selection {
-            specimen(for: family)
-        } else {
-            DetailPlaceholder(
-                hint: "Pick a typeface.",
-                featured: featuredFamily,
-                onPick: { path = [$0] }
-            )
-        }
+    /// Root of the detail stack. The specimen is pushed over this rather than
+    /// swapped in, so the chips have somewhere to go.
+    private var detailRoot: some View {
+        DetailPlaceholder(
+            hint: "Pick a typeface.",
+            featured: featuredFamily,
+            onPick: { path = [$0] }
+        )
     }
 
     /// Today's curated face, resolved against what is actually installed —

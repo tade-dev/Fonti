@@ -36,7 +36,23 @@ struct SavedFontsView: View {
                     // 280 the names truncate; the detail still gets 551pt.
                     .navigationSplitViewColumnWidth(min: 390, ideal: 400, max: 410)
             } detail: {
-                detail
+                // The detail column needs its own stack, not just a view. A
+                // "Pairs well with" chip is a NavigationLink, and with nothing
+                // to push into it had no destination and did nothing at all on
+                // the inner display and iPad. Rooted at the placeholder, with
+                // the same `path` driving it, so a sidebar tap pushes the
+                // specimen and a chip pushes the next face on top of it.
+                NavigationStack(path: $path) {
+                    detailRoot
+                        .navigationDestination(for: FontFamily.self) { family in
+                            specimen(for: family)
+                                // At depth 1 the sidebar is the way back, so a
+                                // Back button to an empty placeholder would be
+                                // noise. From depth 2 it returns to the face
+                                // you came from, which is the point.
+                                .navigationBarBackButtonHidden(path.count <= 1)
+                        }
+                }
             }
         } else {
             NavigationStack(path: $path) {
@@ -47,9 +63,6 @@ struct SavedFontsView: View {
             }
         }
     }
-
-    /// What the detail column shows: the deepest font on the stack.
-    private var selection: FontFamily? { path.last }
 
     private var sidebar: some View {
         Group {
@@ -98,18 +111,13 @@ struct SavedFontsView: View {
         }
     }
 
-    @ViewBuilder
-    private var detail: some View {
-        if let family = selection {
-            specimen(for: family)
-        } else {
-            // No featured face here: Saved can only select what has been
-            // hearted, and the font of the day usually hasn't been — a tap
-            // that does nothing is worse than no tap. The prompt is also
-            // suppressed on an empty library, where the sidebar already says
-            // "Heart a font to keep it here" and two prompts is one too many.
-            DetailPlaceholder(hint: saved.isEmpty ? "" : "Pick a typeface.")
-        }
+    /// Root of the detail stack. No featured face here: Saved can only select
+    /// what has been hearted, and the font of the day usually hasn't been — a
+    /// tap that does nothing is worse than no tap. The prompt is suppressed on
+    /// an empty library, where the sidebar already says "Heart a font to keep
+    /// it here" and two prompts is one too many.
+    private var detailRoot: some View {
+        DetailPlaceholder(hint: saved.isEmpty ? "" : "Pick a typeface.")
     }
 
     @ViewBuilder
