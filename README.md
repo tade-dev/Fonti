@@ -90,7 +90,7 @@ cd Fonti
 open Fonti.xcodeproj
 ```
 
-Pick a simulator and ⌘R. The deployment target is iOS 27.0, but `ArrangementView` in the compare screen is an iOS 27.1 API, so the 27.1 SDK is required to build. Xcode 27.1 is currently a beta, so release builds for the App Store need a non-beta SDK until it ships.
+Pick a simulator and ⌘R. The deployment target is iOS 27.0, but `ArrangementView` in the compare screen is an iOS 27.1 API, so the 27.1 SDK is required to build.
 
 To see the foldable layouts, pick **iPhone Duo** in Device Hub and use the fold buttons in its bottom toolbar; hold ⌥ while dragging for partial hinge angles. There is no `simctl` equivalent — folding is GUI only.
 
