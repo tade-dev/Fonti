@@ -105,6 +105,10 @@ xcodebuild test -project Fonti.xcodeproj -scheme Fonti \
 
 The suite needs the app to have completed onboarding — on a freshly erased simulator the Spotlight and onscreen-entity tests fail because the indexer only runs once `RootView` appears.
 
+## Licence
+
+MIT, an OSI-approved licence. See [LICENSE](LICENSE).
+
 ## Credits
 
 Designed and built in 2026 by **Akintade Oluwaseun**. The icon is an *Aa* specimen — cream A, amber a — on the brand ink `#0D0D0D`.
