@@ -11,10 +11,17 @@ struct SplashView: View {
 
     var body: some View {
         ZStack {
-            Color.fontiInk.ignoresSafeArea()
+            Color.fontiInk
             SplashBackdrop()
             SplashWordmark(index: fontIndex)
         }
+        // The whole stack, not just the colour. Putting `ignoresSafeArea` on
+        // the fill alone left the ZStack sized to the safe area, so on iPhone
+        // Duo — where the vertical bar takes ~84pt off the trailing edge — the
+        // wordmark centred on 867pt of a 951pt display and sat 42pt, exactly
+        // half the inset, left of true centre. A splash has nothing to protect
+        // from the edges, so it should centre on the display itself.
+        .ignoresSafeArea()
         .contentShape(Rectangle())
         .onTapGesture { complete() }
         .task { await runSequence() }
