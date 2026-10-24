@@ -155,11 +155,9 @@ struct BrowseView: View {
             // The bar is a floating glass capsule, and the inset holding it had
             // no background — so cards scrolling underneath showed through the
             // margins either side of the capsule and were hard-clipped at the
-            // screen edge. A scrim fades them out instead, mirroring
-            // OnboardingView's BottomShelfGradient rather than inventing a new
-            // treatment, and keeps the capsule floating rather than sitting on
-            // an opaque bar. Invisible at the top of the list, where there is
-            // nothing behind it to hide.
+            // screen edge. A scrim fades them out instead, and keeps the
+            // capsule floating rather than sitting on an opaque bar. Invisible
+            // at the top of the list, where there is nothing behind it to hide.
             .background {
                 // Stops rather than even colours, and a shorter tail. The
                 // even three-colour version faded across roughly half its
